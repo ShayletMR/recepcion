@@ -1,0 +1,1147 @@
+index.html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Recepción Piloto - S.M.R.</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#f4f6f8; --card:#ffffff; --text:#1c2530; --muted:#6b7a8c;
+    --line:#dde3ea; --verde:#1f9d55; --verde-bg:#e8f7ee;
+    --juntoz:#2563eb; --juntoz-bg:#e8effd; --drop:#7c3aed; --drop-bg:#f1e9fe;
+    --warn:#d97706; --danger:#dc2626;
+  }
+  body.dark{
+    --bg:#11161d; --card:#1a222c; --text:#e8eef5; --muted:#93a3b5;
+    --line:#2a3542; --verde:#34d399; --verde-bg:#12291f;
+    --juntoz:#60a5fa; --juntoz-bg:#131f36; --drop:#a78bfa; --drop-bg:#241a3a;
+    --warn:#fbbf24; --danger:#f87171;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+       background:var(--bg);color:var(--text);transition:background .2s,color .2s}
+  header{background:var(--card);border-bottom:1px solid var(--line);padding:14px 20px;
+         display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .spacer{flex:1}
+  button{font-family:inherit;font-size:13px;padding:9px 14px;border-radius:8px;
+         border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer}
+  button:hover{filter:brightness(.97)}
+  button.primary{background:var(--juntoz);border-color:var(--juntoz);color:#fff;font-weight:600}
+  button.ok{background:var(--verde);border-color:var(--verde);color:#fff;font-weight:600}
+  button.ghost{background:transparent}
+  main{padding:20px;max-width:1400px;margin:0 auto}
+  .tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+  .tab{padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card);
+       cursor:pointer;font-weight:600;font-size:14px}
+  .tab.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:18px}
+  .panel h2{margin:0 0 4px;font-size:16px}
+  .panel .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+  .drop{border:2px dashed var(--line);border-radius:12px;padding:34px;text-align:center;
+        color:var(--muted);cursor:pointer;background:var(--bg)}
+  .drop:hover{border-color:var(--juntoz)}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+  .badge.verde{background:var(--verde-bg);color:var(--verde)}
+  .badge.juntoz{background:var(--juntoz-bg);color:var(--juntoz)}
+  .badge.drop{background:var(--drop-bg);color:var(--drop)}
+  .placas-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .placa-btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+             padding:10px 14px;border-radius:10px;border:2px solid var(--line);
+             background:var(--card);cursor:pointer;min-width:130px;text-align:left}
+  .placa-btn:hover{border-color:var(--juntoz)}
+  .placa-btn .p{font-size:14px;font-weight:800;letter-spacing:.4px}
+  .placa-btn .m{font-size:11.5px;color:var(--muted)}
+  .placa-btn.sel{border-color:var(--juntoz);background:var(--juntoz-bg)}
+  .placa-btn.sel .p{color:var(--juntoz)}
+  .placa-btn.vacia{opacity:.55}
+  .placa-btn.cerrada{border-color:var(--verde);background:var(--verde-bg)}
+  .placa-btn.cerrada .p{color:var(--verde)}
+  .placa-btn.todas{background:var(--bg);font-weight:700}
+  .placa{border:1px solid var(--line);border-radius:12px;margin-bottom:14px;overflow:hidden}
+  .placa-head{display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--bg);
+              flex-wrap:wrap;border-bottom:1px solid var(--line)}
+  .placa-head .code{font-size:18px;font-weight:800;letter-spacing:.5px}
+  .placa-head .meta{color:var(--muted);font-size:12.5px}
+  .placa-head .spacer{flex:1}
+  .barcode{background:#fff;padding:6px 10px;border-radius:6px;display:inline-block}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+  tr.done{background:var(--verde-bg)}
+  tr.done td{opacity:.75}
+  tr.revisar{background:#fff7e0}
+  body.dark tr.revisar{background:#3a2c12}
+  .pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
+  .pill.ok{background:var(--verde);color:#fff}
+  .pill.pend{background:var(--warn);color:#fff}
+  .pill.just{background:var(--danger);color:#fff}
+  .pill.rev{background:#e0a800;color:#fff}
+  .scanbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .scanbar input{flex:1;min-width:220px;padding:11px 14px;font-size:15px;border-radius:8px;
+                 border:1px solid var(--line);background:var(--bg);color:var(--text)}
+  .msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;display:none}
+  .msg.show{display:block}
+  .msg.good{background:var(--verde-bg);color:var(--verde)}
+  .msg.bad{background:#fdecec;color:var(--danger)}
+  body.dark .msg.bad{background:#3a1a1a}
+  .msg.warn{background:#fdf3e3;color:var(--warn)}
+  body.dark .msg.warn{background:#3a2c12}
+  .float{position:fixed;right:20px;bottom:20px;width:340px;background:var(--card);
+         border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.14);z-index:30}
+  .float-head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .float-head strong{font-size:14px;flex:1}
+  .float-body{padding:14px;font-size:13px;max-height:60vh;overflow:auto}
+  .float.collapsed .float-body{display:none}
+  .stat{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed var(--line)}
+  .stat:last-child{border:none}
+  .stat b{font-variant-numeric:tabular-nums}
+  .minihead{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);
+            font-weight:700;margin:14px 0 6px;padding-top:10px;border-top:2px solid var(--line)}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;
+         justify-content:center;z-index:50;padding:20px}
+  .modal.show{display:flex}
+  .modal-box{background:var(--card);border-radius:14px;padding:22px;max-width:620px;width:100%;
+             max-height:85vh;overflow:auto}
+  .modal-box h3{margin:0 0 6px;font-size:17px}
+  .modal-box p{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .just-row{border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px}
+  .just-row .c{font-weight:700;font-size:13px;margin-bottom:8px}
+  .just-row .opts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .just-row .opts button{flex:1;min-width:120px;padding:10px;font-weight:600}
+  .just-row .opts button.sel{background:var(--danger);border-color:var(--danger);color:#fff}
+  .just-row input{width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--line);
+                  background:var(--bg);color:var(--text);font-size:13px}
+  .empty{text-align:center;color:var(--muted);padding:40px;font-size:14px}
+  .rowbtns{display:flex;gap:8px;flex-wrap:wrap}
+  .rol{font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;border:1px solid var(--line)}
+  .rol.escanea{background:var(--verde-bg);color:var(--verde);border-color:var(--verde)}
+  .rol.mira{background:var(--juntoz-bg);color:var(--juntoz);border-color:var(--juntoz)}
+  .sync{font-size:11.5px;color:var(--muted)}
+  .alerta{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;align-items:center;
+          justify-content:center;z-index:80;padding:16px}
+  .alerta.show{display:flex}
+  .alerta-box{background:var(--card);border-radius:16px;padding:26px 22px;max-width:560px;width:100%;
+              text-align:center;border:5px solid var(--warn);box-shadow:0 14px 50px rgba(0,0,0,.4)}
+  .alerta-box.peligro{border-color:var(--danger)}
+  .alerta-ico{font-size:52px;line-height:1;margin-bottom:8px}
+  .alerta-tit{font-size:24px;font-weight:900;letter-spacing:.5px;margin-bottom:10px;color:var(--danger)}
+  .alerta-box.cant .alerta-tit{color:var(--warn)}
+  .alerta-cod{font-size:17px;font-weight:800;margin-bottom:6px;word-break:break-all}
+  .alerta-desc{font-size:15px;color:var(--muted);margin-bottom:14px}
+  .alerta-num{font-size:56px;font-weight:900;color:var(--warn);line-height:1;margin:6px 0 10px}
+  .alerta-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+  .alerta-btns button{padding:14px 26px;font-size:15px;font-weight:700;min-width:150px}
+  body.rf main{padding:8px}
+  body.rf header{padding:8px 10px;gap:6px}
+  body.rf header h1{font-size:13px}
+  body.rf .tabs{gap:5px;margin-bottom:8px}
+  body.rf .tab{padding:8px 10px;font-size:12.5px;flex:1;text-align:center}
+  body.rf .panel{padding:10px;margin-bottom:8px;border-radius:10px}
+  body.rf .panel h2{font-size:13.5px}
+  body.rf .panel .sub{font-size:11.5px;margin-bottom:8px}
+  body.rf .placas-bar{gap:5px;margin-bottom:8px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
+  body.rf .placa-btn{min-width:104px;padding:7px 9px;flex:0 0 auto}
+  body.rf .placa-btn .p{font-size:12.5px}
+  body.rf .placa-btn .m{font-size:10px}
+  body.rf .scanbar{gap:6px;margin-bottom:8px}
+  body.rf .scanbar input{padding:13px 12px;font-size:16px;min-width:0}
+  body.rf .scanbar button{padding:13px 14px;font-size:14px}
+  body.rf table{font-size:11.5px}
+  body.rf th,body.rf td{padding:5px 6px}
+  body.rf .placa-head{padding:8px 10px;gap:8px}
+  body.rf .placa-head .code{font-size:14px}
+  body.rf .placa-head .meta{font-size:11px}
+  body.rf .float{right:8px;bottom:8px;width:270px}
+  body.rf .float-body{padding:9px;font-size:11.5px;max-height:44vh}
+  body.rf .alerta-tit{font-size:19px}
+  body.rf .alerta-num{font-size:44px}
+  body.rf .alerta-btns button{padding:15px 18px;font-size:14px;min-width:120px}
+  body.rf .minihead{font-size:10px}
+  @media(max-width:640px){ .float{left:20px;width:auto} header h1{font-size:15px} }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sistema de Recepción Piloto — S.M.R.</h1>
+  <span class="rol" id="rolBadge">…</span>
+  <span class="sync" id="syncInfo"></span>
+  <span class="spacer"></span>
+  <button class="ghost" id="btnVista">🖥️ Vista laptop</button>
+  <button class="ghost" id="themeBtn">🌙 Modo oscuro</button>
+</header>
+
+<main>
+  <div class="tabs">
+    <div class="tab active" data-tab="carga">📥 Cargar programación</div>
+    <div class="tab" data-tab="verde">🟢 VERDE</div>
+    <div class="tab" data-tab="juntoz">🔵 JUNTOZ</div>
+    <div class="tab" data-tab="drop">🟣 DROP</div>
+    <div class="tab" data-tab="cierre">📋 Cierre del día</div>
+  </div>
+
+  <section id="tab-carga">
+    <div class="panel">
+      <h2>Cargar el Excel de programación</h2>
+      <div class="sub">Puedes subir <b>varios archivos a la vez</b> (mantén Ctrl al seleccionar). Se leerán las hojas <b>PROV VERDE</b>, <b>JUNTOZ</b> y el archivo <b>DROP</b>.</div>
+      <div class="drop" id="drop">Haz clic aquí o arrastra uno o varios archivos Excel (.xlsx)</div>
+      <input type="file" id="file" accept=".xlsx,.xls" multiple hidden>
+      <div class="msg" id="loadMsg"></div>
+      <div class="rowbtns" style="margin-top:14px">
+        <button class="ghost" id="btnSync">🔄 Sincronizar avance desde la nube</button>
+        <button class="ghost" id="btnBajarProg">📥 Traer la programación de la nube</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-verde" style="display:none">
+    <div class="panel">
+      <h2><span class="badge verde">VERDE</span> &nbsp;Recepción — hoja PROV VERDE</h2>
+      <div class="sub">Se escanea el <b>CÓDIGO SKU</b>. Elige una placa para ver su contenido y escanear.</div>
+      <div class="scanbar" id="scanVerdeBar">
+        <input id="scanVerde" placeholder="Escanea el CÓDIGO SKU y presiona Enter…">
+        <button class="primary" id="btnScanVerde">Validar</button>
+      </div>
+      <div class="msg" id="msgVerde"></div>
+    </div>
+    <div class="placas-bar" id="placasVerde"></div>
+    <div id="listaVerde"></div>
+  </section>
+
+  <section id="tab-juntoz" style="display:none">
+    <div class="panel">
+      <h2><span class="badge juntoz">JUNTOZ</span> &nbsp;Recepción — hoja JUNTOZ</h2>
+      <div class="sub">Se escanea el <b>PEDIDO</b> (empieza con 26111000…). Elige una placa para ver su contenido y escanear.</div>
+      <div class="scanbar" id="scanJuntozBar">
+        <input id="scanJuntoz" placeholder="Escanea el PEDIDO y presiona Enter…">
+        <button class="primary" id="btnScanJuntoz">Validar</button>
+      </div>
+      <div class="msg" id="msgJuntoz"></div>
+    </div>
+    <div class="placas-bar" id="placasJuntoz"></div>
+    <div id="listaJuntoz"></div>
+  </section>
+
+  <section id="tab-drop" style="display:none">
+    <div class="panel">
+      <h2><span class="badge drop">DROP</span> &nbsp;Recepción — archivo DROP (sin placa)</h2>
+      <div class="sub">Se escanea el <b>Nro. de pedido</b>. Este archivo no tiene placas: se registra y se cierra completo.</div>
+      <div class="scanbar" id="scanDropBar">
+        <input id="scanDrop" placeholder="Escanea el Nro. de pedido y presiona Enter…">
+        <button class="primary" id="btnScanDrop">Validar</button>
+      </div>
+      <div class="msg" id="msgDrop"></div>
+      <div class="rowbtns" style="margin-top:8px">
+        <button class="ok" id="btnCerrarDrop">Cerrar DROP del día</button>
+      </div>
+    </div>
+    <div id="listaDrop"></div>
+  </section>
+
+  <section id="tab-cierre" style="display:none">
+    <div class="panel">
+      <h2>Cierre de recepción del día</h2>
+      <div class="sub">Resumen para pasar a facturación.</div>
+      <div id="cierreBox"></div>
+      <div class="rowbtns" style="margin-top:14px">
+        <button class="ok" id="btnExport">⬇️ Exportar cierre a Excel</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="float" id="float">
+  <div class="float-head">
+    <strong>📊 Resumen del día</strong>
+    <button class="ghost" id="floatToggle" style="padding:4px 9px">–</button>
+  </div>
+  <div class="float-body" id="floatBody"></div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3 id="modalTitle">Justificar códigos pendientes</h3>
+    <p id="modalSub"></p>
+    <div id="justList"></div>
+    <div class="rowbtns" style="margin-top:14px">
+      <button class="ok" id="btnConfirmJust">Confirmar cierre con justificación</button>
+      <button class="ghost" id="btnCancelJust">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="alerta" id="alerta">
+  <div class="alerta-box" id="alertaBox">
+    <div class="alerta-ico" id="alertaIco">⚠️</div>
+    <div class="alerta-tit" id="alertaTit">PRODUCTO A REVISAR</div>
+    <div class="alerta-cod" id="alertaCod"></div>
+    <div class="alerta-desc" id="alertaDesc"></div>
+    <div class="alerta-num" id="alertaNum" style="display:none"></div>
+    <div class="alerta-btns">
+      <button class="ok" id="alertaOk">Entendido</button>
+    </div>
+  </div>
+</div>
+<script>
+/* ===== CONEXIÓN A SUPABASE ===== */
+const SUPABASE_URL = 'https://oqfqcmvrwbxidlaaybgu.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_W_uxAVmSrKZnSqvL-V1mpg_2AzEq3Ry';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let ROL = localStorage.getItem('smr_rol') || '';
+let VISTA = localStorage.getItem('smr_vista') || 'laptop';
+
+let DATA = { verde: [], juntoz: [], drop: [] };
+let ESTADO = { verde: {}, juntoz: {}, drop: {} };
+let CERRADAS = { verde: {}, juntoz: {}, drop: {} };
+let placaPendiente = null;
+let placaSel = { verde: null, juntoz: null };
+let DIA = new Date().toISOString().slice(0,10);
+
+const SENSIBLES = ['CELULAR','SMARTPHONE','TELEFONO','MOVIL','TABLET','IPAD','LAPTOP','NOTEBOOK',
+  'PORTATIL','COMPUTADORA','IPHONE','SAMSUNG GALAXY','XIAOMI','REDMI','MOTOROLA','HONOR','HUAWEI'];
+
+const norm = s => String(s ?? '').toUpperCase().replace(/[\s\-_.]/g,'').trim();
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fechaExcel = v => {
+  if (v == null || v === '') return '';
+  if (typeof v === 'number'){
+    const d = new Date(Date.UTC(1899,11,30) + v*86400000);
+    return d.toISOString().slice(0,10).split('-').reverse().join('/');
+  }
+  return String(v);
+};
+
+function pedirRol(){
+  if(ROL) return;
+  const r = prompt('¿Este equipo es el RF que ESCANEA o la LAPTOP que solo MIRA?\n\nEscribe: RF  o  LAPTOP', 'RF');
+  ROL = (r || '').trim().toUpperCase().startsWith('L') ? 'laptop' : 'rf';
+  localStorage.setItem('smr_rol', ROL);
+}
+
+function aplicarRol(){
+  const badge = document.getElementById('rolBadge');
+  const esRF = ROL === 'rf';
+  badge.textContent = esRF ? '📷 RF — escanea' : '👁️ Laptop — solo lectura';
+  badge.className = 'rol ' + (esRF ? 'escanea' : 'mira');
+  ['scanVerdeBar','scanJuntozBar','scanDropBar'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = esRF ? 'flex' : 'none';
+  });
+  document.getElementById('btnCerrarDrop').style.display = esRF ? 'inline-block' : 'none';
+}
+
+function aplicarVista(){
+  document.body.classList.toggle('rf', VISTA === 'rf');
+  document.getElementById('btnVista').textContent = VISTA === 'rf' ? '📱 Vista RF' : '🖥️ Vista laptop';
+  localStorage.setItem('smr_vista', VISTA);
+}
+
+document.getElementById('btnVista').onclick = () => {
+  VISTA = VISTA === 'rf' ? 'laptop' : 'rf';
+  aplicarVista();
+};
+
+/* ===== LECTURA DE COLUMNAS ===== */
+function col(row, ...nombres){
+  const keys = Object.keys(row);
+  for(const n of nombres){
+    const k = keys.find(k => norm(k) === norm(n));
+    if(k !== undefined && row[k] !== '') return row[k];
+  }
+  for(const n of nombres){
+    const k = keys.find(k => norm(k).includes(norm(n)));
+    if(k !== undefined && row[k] !== '') return row[k];
+  }
+  return '';
+}
+
+function porPlaca(filas){
+  const map = new Map();
+  filas.forEach((r,i) => {
+    const p = String(col(r,'PLACA') || 'SIN PLACA').trim();
+    if(!map.has(p)) map.set(p, []);
+    map.get(p).push({...r, _i:i});
+  });
+  return map;
+}
+
+/* --- CLAVES: VERDE usa CÓDIGO SKU --- */
+function clave(tipo, it){
+  if(tipo === 'verde') return norm(col(it,'CÓDIGO SKU','CODIGO SKU','ORDEN DE COMPRA'));
+  if(tipo === 'juntoz') return norm(col(it,'PEDIDO'));
+  return norm(col(it,'Nro. de pedido','NRO. DE PEDIDO','PEDIDO'));
+}
+function codigoDe(tipo, it){
+  if(tipo === 'verde') return col(it,'CÓDIGO SKU','CODIGO SKU','ORDEN DE COMPRA');
+  if(tipo === 'juntoz') return col(it,'PEDIDO');
+  return col(it,'Nro. de pedido','NRO. DE PEDIDO','PEDIDO');
+}
+function descDe(tipo, it){
+  if(tipo === 'drop') return col(it,'Productos2','PRODUCTOS2','Productos');
+  return col(it,'DESCRIPCIÓN SKU','DESCRIPCION SKU','DESCRIPCIÓN');
+}
+function piezasDe(tipo, it){
+  if(tipo === 'drop') return col(it,'Unid','UNID','Cantidad de productos');
+  return col(it,'PIEZAS','CANTIDAD');
+}
+
+/* ===== CARGA DE VARIOS ARCHIVOS ===== */
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('file');
+drop.onclick = () => fileInput.click();
+drop.ondragover = e => { e.preventDefault(); drop.style.borderColor = 'var(--juntoz)'; };
+drop.ondragleave = () => { drop.style.borderColor = 'var(--line)'; };
+drop.ondrop = e => {
+  e.preventDefault(); drop.style.borderColor = 'var(--line)';
+  if(e.dataTransfer.files.length) leerVarios([...e.dataTransfer.files]);
+};
+fileInput.onchange = e => { if(e.target.files.length) leerVarios([...e.target.files]); };
+
+function leerVarios(files){
+  const msg = document.getElementById('loadMsg');
+  msg.className = 'msg show';
+  msg.textContent = `Leyendo ${files.length} archivo(s)…`;
+  let pendientes = files.length;
+  const res = { verde: [], juntoz: [], drop: [] };
+
+  files.forEach(f => {
+    const fr = new FileReader();
+    fr.onload = ev => {
+      try{
+        const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
+        const hojaVerde  = wb.SheetNames.find(n => norm(n).includes('VERDE') && !norm(n).includes('RESUMEN'));
+        const hojaJuntoz = wb.SheetNames.find(n => norm(n).includes('JUNTOZ') || norm(n).includes('JUNTOS'));
+        const hojaDrop   = wb.SheetNames.find(n => norm(n).includes('DROP'));
+
+        if(hojaVerde) res.verde = res.verde.concat(XLSX.utils.sheet_to_json(wb.Sheets[hojaVerde], {defval:''}));
+        if(hojaJuntoz) res.juntoz = res.juntoz.concat(XLSX.utils.sheet_to_json(wb.Sheets[hojaJuntoz], {defval:''}));
+        if(hojaDrop) res.drop = res.drop.concat(XLSX.utils.sheet_to_json(wb.Sheets[hojaDrop], {defval:''}));
+
+        if(!hojaVerde && !hojaJuntoz && !hojaDrop){
+          const primera = wb.SheetNames[0];
+          const filas = XLSX.utils.sheet_to_json(wb.Sheets[primera], {defval:''});
+          if(filas.length && Object.keys(filas[0]).some(k => norm(k).includes('NRODEPEDIDO'))){
+            res.drop = res.drop.concat(filas);
+          }
+        }
+      }catch(err){
+        console.warn('Archivo no leído', f.name, err);
+      }
+      pendientes--;
+      if(pendientes === 0) terminarCarga(res);
+    };
+    fr.readAsArrayBuffer(f);
+  });
+}
+
+async function terminarCarga(res){
+  const msg = document.getElementById('loadMsg');
+  if(!res.verde.length && !res.juntoz.length && !res.drop.length){
+    msg.className = 'msg bad show';
+    msg.textContent = 'No encontré las hojas PROV VERDE, JUNTOZ ni el archivo DROP en los archivos subidos.';
+    return;
+  }
+  DATA.verde = res.verde;
+  DATA.juntoz = res.juntoz;
+  DATA.drop = res.drop;
+  placaSel = { verde: null, juntoz: null };
+  msg.className = 'msg good show';
+  msg.textContent = `✔ Cargado: ${DATA.verde.length} en VERDE, ${DATA.juntoz.length} en JUNTOZ y ${DATA.drop.length} en DROP. Publicando…`;
+  renderTodo();
+  await guardarProgramacionNube();
+  msg.textContent = `✔ Programación publicada: ${DATA.verde.length} VERDE · ${DATA.juntoz.length} JUNTOZ · ${DATA.drop.length} DROP.`;
+  cargarDesdeNube();
+}
+
+/* ===== NUBE ===== */
+async function cargarDesdeNube(){
+  try{
+    const {data, error} = await sb.from('recepcion').select('*').eq('dia', DIA);
+    if(error) throw error;
+    ESTADO = { verde:{}, juntoz:{}, drop:{} };
+    CERRADAS = { verde:{}, juntoz:{}, drop:{} };
+    (data || []).forEach(r => {
+      const tipo = r.hoja === 'verde' ? 'verde' : (r.hoja === 'drop' ? 'drop' : 'juntoz');
+      if(r.estado === 'cerrada'){
+        CERRADAS[tipo][r.placa] = {tipo: r.motivo === 'completa' ? 'completa' : 'justificada'};
+      } else {
+        ESTADO[tipo][r.clave] = {
+          ok: r.estado === 'validado',
+          just: r.estado === 'justificado' ? r.motivo : '',
+          obs: r.observacion || ''
+        };
+      }
+    });
+    document.getElementById('syncInfo').textContent = '☁️ Sincronizado ' + new Date().toLocaleTimeString('es-PE');
+    renderTodo();
+  }catch(e){
+    document.getElementById('syncInfo').textContent = '⚠️ Sin conexión a la nube';
+  }
+}
+
+async function guardarEnNube(tipo, placa, claveTxt, estado, motivo, observacion){
+  try{
+    await sb.from('recepcion').upsert({
+      dia: DIA, hoja: tipo, placa: placa, clave: claveTxt,
+      estado: estado, motivo: motivo || '', observacion: observacion || '',
+      actualizado: new Date().toISOString()
+    }, {onConflict: 'dia,hoja,placa,clave'});
+  }catch(e){ console.warn('No se pudo guardar en la nube', e); }
+}
+
+async function guardarProgramacionNube(){
+  try{
+    for(const tipo of ['verde','juntoz','drop']){
+      const filas = DATA[tipo];
+      if(!filas.length) continue;
+      await sb.from('programacion').delete().eq('dia', DIA).eq('hoja', tipo);
+      const lote = filas.map((it, i) => ({
+        dia: DIA, hoja: tipo, rid: i,
+        placa: tipo === 'drop' ? 'DROP' : String(col(it,'PLACA') || 'SIN PLACA').trim(),
+        clave: clave(tipo, it),
+        codigo: String(codigoDe(tipo, it) ?? ''),
+        proveedor: String(col(it,'PROVEEDOR','PROVEEEDOR') ?? ''),
+        descripcion: String(descDe(tipo, it) ?? ''),
+        piezas: String(piezasDe(tipo, it) ?? ''),
+        cliente: String(col(it,'CLIENTE','Nombre cliente','NOMBRE CLIENTE') ?? ''),
+        ruta: String(col(it,'RUTA','PROVINCIA') ?? ''),
+        fecha: String(fechaExcel(col(it,'FECHA DE ENTREGA A CLIENTE','FECHA')) ?? '')
+      }));
+      for(let i = 0; i < lote.length; i += 500){
+        const {error} = await sb.from('programacion').insert(lote.slice(i, i + 500));
+        if(error) throw error;
+      }
+    }
+  }catch(e){ console.warn('No se pudo publicar la programación', e); }
+}
+
+async function cargarProgramacionNube(){
+  try{
+    const {data, error} = await sb.from('programacion').select('*').eq('dia', DIA).order('rid');
+    if(error) throw error;
+    if(!data || !data.length) return false;
+    const nueva = { verde: [], juntoz: [], drop: [] };
+    data.forEach(r => {
+      const tipo = r.hoja === 'verde' ? 'verde' : (r.hoja === 'drop' ? 'drop' : 'juntoz');
+      const base = {
+        'PLACA': r.placa, 'PROVEEDOR': r.proveedor, 'DESCRIPCIÓN SKU': r.descripcion,
+        'PIEZAS': r.piezas, 'CLIENTE': r.cliente, 'RUTA': r.ruta, 'FECHA': r.fecha
+      };
+      if(tipo === 'verde'){ base['CÓDIGO SKU'] = r.codigo; base['ORDEN DE COMPRA'] = r.codigo; }
+      else if(tipo === 'juntoz') base['PEDIDO'] = r.codigo;
+      else {
+        base['Nro. de pedido'] = r.codigo; base['Productos2'] = r.descripcion;
+        base['Unid'] = r.piezas; base['Nombre cliente'] = r.cliente; base['PROVINCIA'] = r.ruta;
+      }
+      nueva[tipo].push(base);
+    });
+    DATA = nueva;
+    const msg = document.getElementById('loadMsg');
+    msg.className = 'msg good show';
+    msg.textContent = `✔ Programación del día recibida: ${DATA.verde.length} VERDE · ${DATA.juntoz.length} JUNTOZ · ${DATA.drop.length} DROP.`;
+    renderTodo();
+    return true;
+  }catch(e){
+    console.warn('No se pudo traer la programación', e);
+    return false;
+  }
+}
+
+document.getElementById('btnSync').onclick = cargarDesdeNube;
+document.getElementById('btnBajarProg').onclick = async () => {
+  await cargarProgramacionNube();
+  await cargarDesdeNube();
+};
+
+/* ===== RENDER ===== */
+function renderTodo(){
+  renderHoja('verde');
+  renderHoja('juntoz');
+  renderDrop();
+  renderCierre();
+  renderFloat();
+}
+
+function renderBotonesPlaca(tipo){
+  const cont = document.getElementById(tipo === 'verde' ? 'placasVerde' : 'placasJuntoz');
+  const filas = DATA[tipo];
+  if(!filas.length){ cont.innerHTML = ''; return; }
+  const grupos = porPlaca(filas);
+  let html = `<button class="placa-btn todas ${placaSel[tipo]===null?'sel':''}" onclick="selPlaca('${tipo}',null)">
+      <span class="p">📋 Todas</span><span class="m">${grupos.size} placas</span></button>`;
+  for(const [placa, items] of grupos){
+    const total = items.length;
+    const hechos = items.filter(it => ESTADO[tipo][clave(tipo,it)]).length;
+    const cerrada = CERRADAS[tipo][placa];
+    const clases = ['placa-btn'];
+    if(placaSel[tipo] === placa) clases.push('sel');
+    if(total === 0) clases.push('vacia');
+    if(cerrada) clases.push('cerrada');
+    html += `<button class="${clases.join(' ')}" onclick="selPlaca('${tipo}','${esc(placa)}')">
+      <span class="p">${cerrada?'✔ ':''}${esc(placa)}</span>
+      <span class="m">${hechos}/${total}${cerrada?' · cerrada':''}</span></button>`;
+  }
+  cont.innerHTML = html;
+}
+
+function selPlaca(tipo, placa){
+  placaSel[tipo] = placa;
+  renderHoja(tipo);
+  const input = document.getElementById(tipo === 'verde' ? 'scanVerde' : 'scanJuntoz');
+  if(input && ROL === 'rf') setTimeout(() => input.focus(), 50);
+}
+
+function renderHoja(tipo){
+  renderBotonesPlaca(tipo);
+  const cont = document.getElementById(tipo === 'verde' ? 'listaVerde' : 'listaJuntoz');
+  const filas = DATA[tipo];
+  if(!filas.length){
+    cont.innerHTML = '<div class="panel empty">Aún no hay datos. Carga el Excel de programación.</div>';
+    return;
+  }
+  const grupos = porPlaca(filas);
+  const esRF = ROL === 'rf';
+  const mostrar = placaSel[tipo] === null ? [...grupos.keys()] : [placaSel[tipo]];
+  let html = '';
+  for(const placa of mostrar){
+    const items = grupos.get(placa);
+    if(!items) continue;
+    const total = items.length;
+    const hechos = items.filter(it => ESTADO[tipo][clave(tipo,it)]).length;
+    const cerrada = CERRADAS[tipo][placa];
+    const pct = total ? Math.round(hechos/total*100) : 0;
+    html += `<div class="placa">
+      <div class="placa-head">
+        <span class="code">🚚 ${esc(placa)}</span>
+        <span class="meta">${total} registro(s) • ${hechos} validado(s) • ${pct}%</span>
+        <span class="spacer"></span>
+        <span class="barcode" id="bc-${tipo}-${esc(placa)}"></span>
+        ${ cerrada
+            ? `<span class="pill ${cerrada.tipo==='completa'?'ok':'just'}">${cerrada.tipo==='completa'?'✔ Cerrada completa':'⚠ Cerrada con justificación'}</span>`
+            : (esRF ? `<button class="${hechos===total?'ok':'primary'}" onclick="cerrarPlaca('${tipo}','${esc(placa)}')">Cerrar placa</button>`
+                    : `<span class="pill pend">Abierta</span>`) }
+      </div>
+      <table>
+        <thead><tr>
+          <th>${tipo==='verde'?'Código SKU':'Pedido'}</th>
+          <th>Proveedor</th><th>Descripción</th><th>Piezas</th>
+          <th>Cliente</th><th>Ruta</th><th>Fecha</th><th>Estado</th>
+        </tr></thead>
+        <tbody>`;
+    items.forEach(it => {
+      const k = clave(tipo,it);
+      const est = ESTADO[tipo][k];
+      const desc = descDe(tipo,it);
+      const esRev = esSensible(desc);
+      html += `<tr class="${est?'done':''} ${esRev?'revisar':''}">
+        <td><b>${esc(codigoDe(tipo,it))}</b></td>
+        <td>${esc(col(it,'PROVEEDOR','PROVEEEDOR'))}</td>
+        <td>${esc(desc)} ${esRev?'<span class="pill rev">REVISAR</span>':''}</td>
+        <td>${esc(piezasDe(tipo,it))}</td>
+        <td>${esc(col(it,'CLIENTE'))}</td>
+        <td>${esc(col(it,'RUTA'))}</td>
+        <td>${esc(fechaExcel(col(it,'FECHA DE ENTREGA A CLIENTE','FECHA')))}</td>
+        <td>${ est
+              ? (est.ok ? `<span class="pill ok">✔ Validado</span>` : `<span class="pill just">${esc(est.just||'Justificado')}</span>`)
+              : `<span class="pill pend">Pendiente</span>` }</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+  cont.innerHTML = html;
+  for(const placa of mostrar){
+    const el = document.getElementById(`bc-${tipo}-${placa}`);
+    if(el && window.JsBarcode){
+      try{ JsBarcode(el, placa, {format:'CODE128', width:1.6, height:44, fontSize:13, margin:2}); }
+      catch(e){ el.textContent = placa; }
+    }
+  }
+}
+
+function renderDrop(){
+  const cont = document.getElementById('listaDrop');
+  const filas = DATA.drop;
+  if(!filas.length){
+    cont.innerHTML = '<div class="panel empty">Aún no hay datos del DROP. Carga el archivo.</div>';
+    return;
+  }
+  const hechos = filas.filter(it => ESTADO.drop[clave('drop',it)]).length;
+  const cerrada = CERRADAS.drop['DROP'];
+  let html = `<div class="placa">
+    <div class="placa-head">
+      <span class="code">🟣 DROP del día</span>
+      <span class="meta">${filas.length} registro(s) • ${hechos} validado(s)</span>
+      <span class="spacer"></span>
+      ${ cerrada
+          ? `<span class="pill ${cerrada.tipo==='completa'?'ok':'just'}">${cerrada.tipo==='completa'?'✔ Cerrado completo':'⚠ Cerrado con justificación'}</span>`
+          : `<span class="pill pend">Abierto</span>` }
+    </div>
+    <table><thead><tr>
+      <th>Proveedor</th><th>Nro. de pedido</th><th>Provincia</th><th>Productos2</th>
+      <th>Unid</th><th>Peso2</th><th>Nombre cliente</th><th>Estado</th>
+    </tr></thead><tbody>`;
+  filas.forEach(it => {
+    const k = clave('drop',it);
+    const est = ESTADO.drop[k];
+    const desc = descDe('drop',it);
+    const esRev = esSensible(desc);
+    html += `<tr class="${est?'done':''} ${esRev?'revisar':''}">
+      <td>${esc(col(it,'PROVEEDOR'))}</td>
+      <td><b>${esc(codigoDe('drop',it))}</b></td>
+      <td>${esc(col(it,'PROVINCIA'))}</td>
+      <td>${esc(desc)} ${esRev?'<span class="pill rev">REVISAR</span>':''}</td>
+      <td>${esc(col(it,'Unid','UNID'))}</td>
+      <td>${esc(col(it,'Peso2','PESO2'))}</td>
+      <td>${esc(col(it,'Nombre cliente','NOMBRE CLIENTE'))}</td>
+      <td>${ est
+            ? (est.ok ? `<span class="pill ok">✔ Validado</span>` : `<span class="pill just">${esc(est.just||'Justificado')}</span>`)
+            : `<span class="pill pend">Pendiente</span>` }</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  cont.innerHTML = html;
+}
+/* ===== DUPLICADOS ===== */
+function buscarDuplicado(tipo, cod){
+  const v = norm(cod);
+  for(const t of ['verde','juntoz','drop']){
+    if(t === tipo) continue;
+    const fila = DATA[t].find(it => clave(t,it) === v);
+    if(fila){
+      const est = ESTADO[t][v];
+      if(est) return {tipo:t, placa: t==='drop' ? 'DROP' : col(fila,'PLACA')};
+    }
+  }
+  return null;
+}
+
+/* ===== ALERTAS ===== */
+function esSensible(desc){
+  const d = norm(desc);
+  return SENSIBLES.some(p => d.includes(norm(p)));
+}
+
+let alertaResolvers = [];
+function mostrarAlerta({titulo, ico, cod, desc, cantidad, peligro}){
+  return new Promise(resolve => {
+    const box = document.getElementById('alertaBox');
+    box.className = 'alerta-box' + (peligro ? ' peligro' : '') + (cantidad ? ' cant' : '');
+    document.getElementById('alertaIco').textContent = ico || '⚠️';
+    document.getElementById('alertaTit').textContent = titulo;
+    document.getElementById('alertaCod').textContent = cod || '';
+    document.getElementById('alertaDesc').textContent = desc || '';
+    const num = document.getElementById('alertaNum');
+    if(cantidad){
+      num.style.display = 'block';
+      num.textContent = cantidad + (Number(cantidad) === 1 ? ' pieza' : ' piezas');
+    } else {
+      num.style.display = 'none';
+    }
+    document.getElementById('alerta').classList.add('show');
+    alertaResolvers.push(resolve);
+  });
+}
+
+function cerrarAlerta(){
+  document.getElementById('alerta').classList.remove('show');
+  const r = alertaResolvers.shift();
+  if(r) r();
+}
+document.getElementById('alertaOk').onclick = cerrarAlerta;
+document.getElementById('alerta').onclick = e => { if(e.target.id === 'alerta') cerrarAlerta(); };
+document.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && document.getElementById('alerta').classList.contains('show')){
+    e.preventDefault(); cerrarAlerta();
+  }
+});
+
+/* ===== ESCANEO ===== */
+async function validar(tipo, valor){
+  const msgId = tipo==='verde'?'msgVerde':(tipo==='juntoz'?'msgJuntoz':'msgDrop');
+  const msg = document.getElementById(msgId);
+  const v = norm(valor);
+  if(!v) return;
+  if(ROL !== 'rf'){
+    msg.className='msg warn show'; msg.textContent='Este equipo está en modo lectura. Escanea desde el RF.'; return;
+  }
+  const filas = DATA[tipo];
+  if(!filas.length){
+    msg.className='msg bad show'; msg.textContent='Primero carga el Excel de programación.'; return;
+  }
+  const encontrados = filas.filter(it => clave(tipo,it) === v);
+  if(!encontrados.length){
+    msg.className='msg bad show';
+    msg.textContent = `⚠ "${valor}" no está en la programación de ${tipo==='verde'?'VERDE':(tipo==='juntoz'?'JUNTOZ':'DROP')}.`;
+    return;
+  }
+
+  const dup = buscarDuplicado(tipo, valor);
+
+  const it0 = encontrados[0];
+  const desc = descDe(tipo, it0);
+  const piezas = Number(String(piezasDe(tipo, it0)).replace(/[^\d.]/g,'')) || 0;
+  const sensible = esSensible(desc);
+  const muchaCant = piezas > 1;
+
+  if(sensible || muchaCant){
+    await mostrarAlerta({
+      titulo: sensible && muchaCant ? 'PRODUCTO A REVISAR · CANTIDAD ALTA'
+            : (sensible ? 'PRODUCTO A REVISAR' : 'CANTIDAD MAYOR A 1'),
+      ico: sensible ? '📱' : '🔢',
+      cod: valor,
+      desc: desc,
+      cantidad: muchaCant ? piezas : null,
+      peligro: sensible
+    });
+  }
+
+  let nuevos = 0;
+  for(const it of encontrados){
+    const k = clave(tipo,it);
+    if(!ESTADO[tipo][k]){
+      ESTADO[tipo][k] = {ok:true};
+      nuevos++;
+      await guardarEnNube(tipo, tipo==='drop'?'DROP':col(it,'PLACA'), k, 'validado', '', '');
+    }
+  }
+  let txt = nuevos
+    ? `✔ Validado: ${encontrados.length} registro(s) con ${valor}.`
+    : `Ya estaba validado (${valor}).`;
+  if(dup) txt += ` ⚠ Ojo: este código ya fue escaneado en ${dup.tipo.toUpperCase()} (placa ${dup.placa}).`;
+  msg.className = dup ? 'msg warn show' : 'msg good show';
+  msg.textContent = txt;
+  renderTodo();
+}
+
+document.getElementById('btnScanVerde').onclick = () => {
+  const i = document.getElementById('scanVerde'); validar('verde', i.value); i.value=''; i.focus();
+};
+document.getElementById('scanVerde').onkeydown = e => {
+  if(e.key==='Enter'){ validar('verde', e.target.value); e.target.value=''; }
+};
+document.getElementById('btnScanJuntoz').onclick = () => {
+  const i = document.getElementById('scanJuntoz'); validar('juntoz', i.value); i.value=''; i.focus();
+};
+document.getElementById('scanJuntoz').onkeydown = e => {
+  if(e.key==='Enter'){ validar('juntoz', e.target.value); e.target.value=''; }
+};
+document.getElementById('btnScanDrop').onclick = () => {
+  const i = document.getElementById('scanDrop'); validar('drop', i.value); i.value=''; i.focus();
+};
+document.getElementById('scanDrop').onkeydown = e => {
+  if(e.key==='Enter'){ validar('drop', e.target.value); e.target.value=''; }
+};
+
+/* ===== CIERRE DE PLACA ===== */
+async function cerrarPlaca(tipo, placa){
+  if(ROL !== 'rf'){ alert('Solo el RF puede cerrar placas.'); return; }
+  const items = porPlaca(DATA[tipo]).get(placa) || [];
+  const pendientes = items.filter(it => !ESTADO[tipo][clave(tipo,it)]);
+  if(!pendientes.length){
+    CERRADAS[tipo][placa] = {tipo:'completa'};
+    await guardarEnNube(tipo, placa, '__CIERRE__', 'cerrada', 'completa', '');
+    renderTodo();
+    return;
+  }
+  abrirJustificacion(tipo, placa, pendientes);
+}
+
+document.getElementById('btnCerrarDrop').onclick = async () => {
+  if(ROL !== 'rf'){ alert('Solo el RF puede cerrar.'); return; }
+  const pendientes = DATA.drop.filter(it => !ESTADO.drop[clave('drop',it)]);
+  if(!pendientes.length){
+    CERRADAS.drop['DROP'] = {tipo:'completa'};
+    await guardarEnNube('drop', 'DROP', '__CIERRE__', 'cerrada', 'completa', '');
+    renderTodo();
+    return;
+  }
+  abrirJustificacion('drop', 'DROP', pendientes);
+};
+
+function abrirJustificacion(tipo, placa, pendientes){
+  placaPendiente = {tipo, placa};
+  document.getElementById('modalTitle').textContent =
+    `Faltan ${pendientes.length} código(s) por validar${tipo==='drop'?' — DROP':' — Placa '+placa}`;
+  document.getElementById('modalSub').textContent =
+    'Para cerrar debes justificar por qué no se validaron. Quedará registrado.';
+  const lista = document.getElementById('justList');
+  lista.innerHTML = pendientes.map(it => {
+    const cod = codigoDe(tipo,it);
+    return `<div class="just-row">
+      <div class="c">${esc(cod)} — ${esc(descDe(tipo,it))}</div>
+      <div class="opts" data-cod="${esc(cod)}">
+        <button type="button" class="opt" data-motivo="No llegó">No llegó</button>
+        <button type="button" class="opt" data-motivo="Rechazado">Rechazado</button>
+      </div>
+      <input placeholder="Observación (opcional)" data-obs="${esc(cod)}">
+    </div>`;
+  }).join('');
+  lista.querySelectorAll('.opts').forEach(g => {
+    g.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        g.querySelectorAll('.opt').forEach(x => x.classList.remove('sel'));
+        b.classList.add('sel');
+        g.dataset.sel = b.dataset.motivo;
+      };
+    });
+  });
+  document.getElementById('modal').classList.add('show');
+}
+
+document.getElementById('btnCancelJust').onclick = () => {
+  document.getElementById('modal').classList.remove('show');
+  placaPendiente = null;
+};
+
+document.getElementById('btnConfirmJust').onclick = async () => {
+  if(!placaPendiente) return;
+  const {tipo, placa} = placaPendiente;
+  const grupos = document.querySelectorAll('#justList .opts');
+  let faltan = false;
+  grupos.forEach(g => { if(!g.dataset.sel) faltan = true; });
+  if(faltan){
+    alert('Debes elegir un motivo (No llegó o Rechazado) para cada código pendiente.');
+    return;
+  }
+  for(const g of grupos){
+    const cod = g.dataset.cod;
+    const motivo = g.dataset.sel;
+    const obs = document.querySelector(`#justList input[data-obs="${CSS.escape(cod)}"]`);
+    const items = tipo==='drop' ? DATA.drop : (porPlaca(DATA[tipo]).get(placa) || []);
+    for(const it of items){
+      if(String(codigoDe(tipo,it)) === cod){
+        ESTADO[tipo][clave(tipo,it)] = {ok:false, just:motivo, obs: obs ? obs.value.trim() : ''};
+        await guardarEnNube(tipo, placa, clave(tipo,it), 'justificado', motivo, obs ? obs.value.trim() : '');
+      }
+    }
+  }
+  CERRADAS[tipo][placa] = {tipo:'justificada'};
+  await guardarEnNube(tipo, placa, '__CIERRE__', 'cerrada', 'justificada', '');
+  document.getElementById('modal').classList.remove('show');
+  placaPendiente = null;
+  renderTodo();
+};
+
+/* ===== ESTADÍSTICAS ===== */
+function statsTipo(tipo){
+  const filas = DATA[tipo];
+  const total = filas.length;
+  let ok = 0, just = 0;
+  filas.forEach(it => {
+    const e = ESTADO[tipo][clave(tipo,it)];
+    if(e){ if(e.ok) ok++; else just++; }
+  });
+  const avanzados = ok + just;
+  const faltanCod = total - avanzados;
+  let placasTotal = 0, placasAvanz = 0, placasFaltan = 0;
+  if(tipo === 'drop'){
+    placasTotal = filas.length ? 1 : 0;
+    placasAvanz = CERRADAS.drop['DROP'] ? 1 : 0;
+    placasFaltan = placasTotal - placasAvanz;
+  } else {
+    const grupos = porPlaca(filas);
+    placasTotal = grupos.size;
+    for(const [placa, items] of grupos){
+      const cerrada = CERRADAS[tipo][placa];
+      const completos = items.every(it => ESTADO[tipo][clave(tipo,it)]);
+      if(cerrada || completos) placasAvanz++; else placasFaltan++;
+    }
+  }
+  return {total, ok, just, avanzados, faltanCod, placasTotal, placasAvanz, placasFaltan};
+}
+
+/* ===== CIERRE DEL DÍA ===== */
+function renderCierre(){
+  const box = document.getElementById('cierreBox');
+  if(!DATA.verde.length && !DATA.juntoz.length && !DATA.drop.length){
+    box.innerHTML = '<div class="empty">Aún no hay datos cargados.</div>';
+    return;
+  }
+  let html = '';
+  ['verde','juntoz','drop'].forEach(tipo => {
+    const filas = DATA[tipo];
+    if(!filas.length) return;
+    const s = statsTipo(tipo);
+    const justificados = [];
+    filas.forEach(it => {
+      const e = ESTADO[tipo][clave(tipo,it)];
+      if(e && e.just){
+        justificados.push({placa: tipo==='drop'?'DROP':col(it,'PLACA'), cod: codigoDe(tipo,it),
+                           desc: descDe(tipo,it), motivo:e.just, obs:e.obs||''});
+      }
+    });
+    const nombre = tipo==='verde'?'VERDE':(tipo==='juntoz'?'JUNTOZ':'DROP');
+    html += `<div class="panel">
+      <h2><span class="badge ${tipo}">${nombre}</span></h2>
+      <div class="stat"><span>Registros totales</span><b>${s.total}</b></div>
+      <div class="stat"><span>Avanzados (escaneados + justificados)</span><b>${s.avanzados}</b></div>
+      <div class="stat"><span>· Escaneados</span><b>${s.ok}</b></div>
+      <div class="stat"><span>· Justificados</span><b>${s.just}</b></div>
+      <div class="stat"><span>Códigos que faltan validar</span><b>${s.faltanCod}</b></div>
+      <div class="stat"><span>Placas totales</span><b>${s.placasTotal}</b></div>
+      <div class="stat"><span>Placas avanzadas</span><b>${s.placasAvanz}</b></div>
+      <div class="stat"><span>Placas que faltan validar</span><b>${s.placasFaltan}</b></div>
+      ${ justificados.length ? `
+        <h3 style="font-size:14px;margin:16px 0 8px">Códigos justificados (${justificados.length})</h3>
+        <table><thead><tr><th>Placa</th><th>Código</th><th>Descripción</th><th>Motivo</th><th>Observación</th></tr></thead><tbody>
+        ${justificados.map(j=>`<tr><td><b>${esc(j.placa)}</b></td><td>${esc(j.cod)}</td><td>${esc(j.desc)}</td><td>${esc(j.motivo)}</td><td>${esc(j.obs)}</td></tr>`).join('')}
+        </tbody></table>` : '' }
+    </div>`;
+  });
+  box.innerHTML = html;
+}
+
+/* ===== PANEL FLOTANTE ===== */
+function renderFloat(){
+  const body = document.getElementById('floatBody');
+  if(!DATA.verde.length && !DATA.juntoz.length && !DATA.drop.length){
+    body.innerHTML = '<div class="empty" style="padding:10px">Sin datos.</div>';
+    return;
+  }
+  let html = '';
+  let gTotal = 0, gAvanz = 0, gFaltan = 0, gPlacas = 0, gPlacasAvanz = 0, gPlacasFaltan = 0;
+
+  ['verde','juntoz'].forEach(tipo => {
+    if(!DATA[tipo].length) return;
+    const s = statsTipo(tipo);
+    gTotal += s.total; gAvanz += s.avanzados; gFaltan += s.faltanCod;
+    gPlacas += s.placasTotal; gPlacasAvanz += s.placasAvanz; gPlacasFaltan += s.placasFaltan;
+    html += `<div style="margin-bottom:10px">
+      <div class="stat"><span><span class="badge ${tipo}">${tipo==='verde'?'VERDE':'JUNTOZ'}</span></span><b>${s.avanzados}/${s.total}</b></div>
+      <div class="stat"><span>Faltan validar</span><b>${s.faltanCod}</b></div>
+      <div class="stat"><span>Placas</span><b>${s.placasTotal}</b></div>
+      <div class="stat"><span>Placas por validar</span><b>${s.placasFaltan}</b></div>
+    </div>`;
+  });
+
+  if(DATA.drop.length){
+    const s = statsTipo('drop');
+    gTotal += s.total; gAvanz += s.avanzados; gFaltan += s.faltanCod;
+    gPlacas += s.placasTotal; gPlacasAvanz += s.placasAvanz; gPlacasFaltan += s.placasFaltan;
+    html += `<div style="margin-bottom:10px">
+      <div class="stat"><span><span class="badge drop">DROP</span></span><b>${s.avanzados}/${s.total}</b></div>
+      <div class="stat"><span>Faltan validar</span><b>${s.faltanCod}</b></div>
+      <div class="stat"><span>Cerrado</span><b>${s.placasAvanz?'Sí':'No'}</b></div>
+    </div>`;
+  }
+
+  html += `<div class="minihead">Total general</div>
+    <div class="stat"><span>Códigos totales</span><b>${gTotal}</b></div>
+    <div class="stat"><span>Avanzados</span><b>${gAvanz}</b></div>
+    <div class="stat"><span>Faltan validar</span><b>${gFaltan}</b></div>
+    <div class="stat"><span>Placas totales</span><b>${gPlacas}</b></div>
+    <div class="stat"><span>Placas avanzadas</span><b>${gPlacasAvanz}</b></div>
+    <div class="stat"><span>Placas faltan validar</span><b>${gPlacasFaltan}</b></div>`;
+
+  body.innerHTML = html;
+}
+
+document.getElementById('floatToggle').onclick = () => {
+  const f = document.getElementById('float');
+  f.classList.toggle('collapsed');
+  document.getElementById('floatToggle').textContent = f.classList.contains('collapsed') ? '+' : '–';
+};
+
+/* ===== TABS ===== */
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    ['carga','verde','juntoz','drop','cierre'].forEach(id => {
+      document.getElementById('tab-'+id).style.display = (id === t.dataset.tab) ? 'block' : 'none';
+    });
+    if(t.dataset.tab === 'verde' || t.dataset.tab === 'juntoz'){
+      const input = document.getElementById(t.dataset.tab === 'verde' ? 'scanVerde' : 'scanJuntoz');
+      if(input && ROL === 'rf') setTimeout(() => input.focus(), 60);
+    }
+    if(t.dataset.tab === 'drop'){
+      const input = document.getElementById('scanDrop');
+      if(input && ROL === 'rf') setTimeout(() => input.focus(), 60);
+    }
+  };
+});
+
+/* ===== MODO OSCURO ===== */
+document.getElementById('themeBtn').onclick = () => {
+  document.body.classList.toggle('dark');
+  document.getElementById('themeBtn').textContent =
+    document.body.classList.contains('dark') ? '☀️ Modo claro' : '🌙 Modo oscuro';
+};
+
+/* ===== EXPORTAR ===== */
+document.getElementById('btnExport').onclick = () => {
+  const rows = [];
+  ['verde','juntoz'].forEach(tipo => {
+    porPlaca(DATA[tipo]).forEach((items, placa) => {
+      items.forEach(it => {
+        const e = ESTADO[tipo][clave(tipo,it)] || {};
+        rows.push({
+          HOJA: tipo==='verde'?'VERDE':'JUNTOZ',
+          PLACA: placa,
+          CODIGO: codigoDe(tipo,it),
+          DESCRIPCION: descDe(tipo,it),
+          PIEZAS: piezasDe(tipo,it),
+          CLIENTE: col(it,'CLIENTE'),
+          RUTA: col(it,'RUTA'),
+          ESTADO: e.ok ? 'VALIDADO' : (e.just ? 'JUSTIFICADO' : 'PENDIENTE'),
+          MOTIVO: e.just || '',
+          OBSERVACION: e.obs || '',
+          CIERRE_PLACA: CERRADAS[tipo][placa]?.tipo || 'ABIERTA'
+        });
+      });
+    });
+  });
+  DATA.drop.forEach(it => {
+    const e = ESTADO.drop[clave('drop',it)] || {};
+    rows.push({
+      HOJA: 'DROP',
+      PLACA: 'DROP',
+      CODIGO: codigoDe('drop',it),
+      DESCRIPCION: descDe('drop',it),
+      PIEZAS: piezasDe('drop',it),
+      CLIENTE: col(it,'Nombre cliente','NOMBRE CLIENTE'),
+      RUTA: col(it,'PROVINCIA'),
+      ESTADO: e.ok ? 'VALIDADO' : (e.just ? 'JUSTIFICADO' : 'PENDIENTE'),
+      MOTIVO: e.just || '',
+      OBSERVACION: e.obs || '',
+      CIERRE_PLACA: CERRADAS.drop['DROP']?.tipo || 'ABIERTA'
+    });
+  });
+  if(!rows.length){ alert('No hay datos para exportar.'); return; }
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'CIERRE');
+  XLSX.writeFile(wb, 'cierre_recepcion_' + new Date().toISOString().slice(0,10) + '.xlsx');
+};
+
+/* ===== INICIO ===== */
+pedirRol();
+aplicarRol();
+aplicarVista();
+renderTodo();
+
+(async () => {
+  const msg = document.getElementById('loadMsg');
+  msg.className = 'msg show';
+  msg.textContent = 'Buscando la programación del día…';
+  const hayProg = await cargarProgramacionNube();
+  if(!hayProg){
+    msg.className = 'msg show';
+    msg.textContent = 'Todavía no hay programación publicada hoy. Cárgala desde la laptop (o arrastra los Excel aquí).';
+  }
+  cargarDesdeNube();
+})();
+
+setInterval(async () => {
+  if(!DATA.verde.length && !DATA.juntoz.length && !DATA.drop.length) await cargarProgramacionNube();
+  if(DATA.verde.length || DATA.juntoz.length || DATA.drop.length) cargarDesdeNube();
+}, 10000);
+</script>
+</body>
+</html>

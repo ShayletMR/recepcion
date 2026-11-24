@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Sistema de Recepción Piloto - S.M.R.</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
@@ -12,28 +12,35 @@
     --bg:#f4f6f8; --card:#ffffff; --text:#1c2530; --muted:#6b7a8c;
     --line:#dde3ea; --verde:#1f9d55; --verde-bg:#e8f7ee;
     --juntoz:#2563eb; --juntoz-bg:#e8effd; --drop:#7c3aed; --drop-bg:#f1e9fe;
-    --warn:#d97706; --danger:#dc2626; --gris:#6b7280; --gris-bg:#eef1f5;
+    --warn:#d97706; --danger:#dc2626;
+    --bext:#2563eb; --courier:#16a34a; --sotranic:#ea580c;
   }
   body.dark{
     --bg:#11161d; --card:#1a222c; --text:#e8eef5; --muted:#93a3b5;
     --line:#2a3542; --verde:#34d399; --verde-bg:#12291f;
     --juntoz:#60a5fa; --juntoz-bg:#131f36; --drop:#a78bfa; --drop-bg:#241a3a;
-    --warn:#fbbf24; --danger:#f87171; --gris:#9ca3af; --gris-bg:#242c36;
+    --warn:#fbbf24; --danger:#f87171;
+    --bext:#60a5fa; --courier:#4ade80; --sotranic:#fb923c;
   }
   *{box-sizing:border-box}
+  html,body{height:100%}
   body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-       background:var(--bg);color:var(--text);transition:background .2s,color .2s}
+       background:var(--bg);color:var(--text);transition:background .2s,color .2s;
+       height:100dvh;display:flex;flex-direction:column;overflow:hidden;
+       -webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
   header{background:var(--card);border-bottom:1px solid var(--line);padding:14px 20px;
-         display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+         display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex:0 0 auto;z-index:20}
   header h1{font-size:17px;margin:0;font-weight:700}
   header .spacer{flex:1}
   button{font-family:inherit;font-size:13px;padding:9px 14px;border-radius:8px;
-         border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer}
+         border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer;
+         touch-action:manipulation}
   button:hover{filter:brightness(.97)}
   button.primary{background:var(--juntoz);border-color:var(--juntoz);color:#fff;font-weight:600}
   button.ok{background:var(--verde);border-color:var(--verde);color:#fff;font-weight:600}
   button.ghost{background:transparent}
-  main{padding:20px;max-width:1400px;margin:0 auto}
+  main{padding:20px;max-width:1400px;margin:0 auto;width:100%;
+       flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
   .tab{padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card);
        cursor:pointer;font-weight:600;font-size:14px}
@@ -73,18 +80,17 @@
   th{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
   tr.done{background:var(--verde-bg)}
   tr.done td{opacity:.75}
-  tr.rechazado{background:#fdecec}
-  body.dark tr.rechazado{background:#3a1a1a}
-  tr.nollego{background:var(--gris-bg)}
-  tr.nollego td{opacity:.75}
   tr.revisar{background:#fff7e0}
   body.dark tr.revisar{background:#3a2c12}
-  .pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;display:inline-block}
+  .pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
   .pill.ok{background:var(--verde);color:#fff}
   .pill.pend{background:var(--warn);color:#fff}
   .pill.just{background:var(--danger);color:#fff}
-  .pill.gris{background:var(--gris);color:#fff}
   .pill.rev{background:#e0a800;color:#fff}
+  .pill.ruta{color:#fff}
+  .pill.ruta.bext{background:var(--bext)}
+  .pill.ruta.courier{background:var(--courier)}
+  .pill.ruta.sotranic{background:var(--sotranic)}
   .scanbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
   .scanbar input{flex:1;min-width:220px;padding:11px 14px;font-size:15px;border-radius:8px;
                  border:1px solid var(--line);background:var(--bg);color:var(--text)}
@@ -110,12 +116,9 @@
          justify-content:center;z-index:50;padding:20px}
   .modal.show{display:flex}
   .modal-box{background:var(--card);border-radius:14px;padding:22px;max-width:620px;width:100%;
-             max-height:85vh;overflow:auto;position:relative}
-  .modal-box h3{margin:0 0 6px;font-size:17px;padding-right:44px}
+             max-height:85vh;overflow:auto}
+  .modal-box h3{margin:0 0 6px;font-size:17px}
   .modal-box p{color:var(--muted);font-size:13.5px;margin:0 0 14px}
-  .xbtn{position:absolute;top:12px;right:12px;width:40px;height:40px;padding:0;
-        font-size:22px;font-weight:700;line-height:1;border-radius:10px;
-        display:flex;align-items:center;justify-content:center}
   .just-row{border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px}
   .just-row .c{font-weight:700;font-size:13px;margin-bottom:8px}
   .just-row .opts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
@@ -133,29 +136,49 @@
           justify-content:center;z-index:80;padding:16px}
   .alerta.show{display:flex}
   .alerta-box{background:var(--card);border-radius:16px;padding:26px 22px;max-width:560px;width:100%;
-              text-align:center;border:5px solid var(--warn);box-shadow:0 14px 50px rgba(0,0,0,.4)}
+              text-align:center;border:5px solid var(--warn);box-shadow:0 14px 50px rgba(0,0,0,.4);
+              max-height:92dvh;overflow:auto}
   .alerta-box.peligro{border-color:var(--danger)}
+  .alerta-box.cant{border-color:var(--warn)}
+  .alerta-box.ruta-bext{border-color:var(--bext)}
+  .alerta-box.ruta-courier{border-color:var(--courier)}
+  .alerta-box.ruta-sotranic{border-color:var(--sotranic)}
   .alerta-ico{font-size:52px;line-height:1;margin-bottom:8px}
   .alerta-tit{font-size:24px;font-weight:900;letter-spacing:.5px;margin-bottom:10px;color:var(--danger)}
   .alerta-box.cant .alerta-tit{color:var(--warn)}
+  .alerta-box.ruta-bext .alerta-tit{color:var(--bext)}
+  .alerta-box.ruta-courier .alerta-tit{color:var(--courier)}
+  .alerta-box.ruta-sotranic .alerta-tit{color:var(--sotranic)}
   .alerta-cod{font-size:17px;font-weight:800;margin-bottom:6px;word-break:break-all}
   .alerta-desc{font-size:15px;color:var(--muted);margin-bottom:14px}
   .alerta-num{font-size:56px;font-weight:900;color:var(--warn);line-height:1;margin:6px 0 10px}
+  .alerta-bloque{text-align:left;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+                 margin-bottom:8px;font-size:14px}
+  .alerta-bloque b{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;
+                   color:var(--muted);margin-bottom:4px}
   .alerta-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px}
   .alerta-btns button{padding:14px 26px;font-size:15px;font-weight:700;min-width:150px}
-  .menu{position:fixed;background:var(--card);border:1px solid var(--line);border-radius:10px;
-        box-shadow:0 10px 34px rgba(0,0,0,.22);z-index:60;padding:6px;min-width:210px;display:none}
-  .menu.show{display:block}
-  .menu button{display:block;width:100%;text-align:left;border:none;background:transparent;
-               padding:12px 14px;font-size:14px;font-weight:600;border-radius:8px}
-  .menu button:hover{background:var(--bg)}
-  .menu button.danger{color:var(--danger)}
-  .menu button.gris{color:var(--gris)}
-  .dots{padding:4px 10px;font-size:18px;font-weight:900;line-height:1;border-radius:6px}
-  .avisoNube{position:fixed;left:50%;transform:translateX(-50%);top:70px;z-index:90;
-             background:var(--danger);color:#fff;padding:12px 20px;border-radius:10px;
-             font-size:13.5px;font-weight:700;box-shadow:0 8px 26px rgba(0,0,0,.3);display:none}
-  .avisoNube.show{display:block}
+  .alerta-btns button.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+  .opt-motivo{padding:12px 14px;font-size:14px;font-weight:600}
+  .opt-motivo.sel{background:var(--danger);border-color:var(--danger);color:#fff}
+  .menu-row{position:fixed;display:none;flex-direction:column;gap:6px;z-index:90;
+            background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px;
+            box-shadow:0 10px 34px rgba(0,0,0,.25);width:220px}
+  .menu-row.show{display:flex}
+  .menu-row button{width:100%;text-align:left;padding:13px 14px;font-size:14px;font-weight:600}
+  .menu-row button.danger{color:var(--danger)}
+  .menu-row button.volver{color:var(--muted)}
+  .desc-full{position:fixed;inset:0;background:var(--card);z-index:95;display:none;flex-direction:column}
+  .desc-full.show{display:flex}
+  .desc-head{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);flex:0 0 auto}
+  .desc-head strong{flex:1;font-size:16px}
+  .desc-head button{padding:12px 18px;font-size:15px;font-weight:700}
+  .desc-body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px}
+  .desc-body .d-cod{font-size:22px;font-weight:900;word-break:break-all;margin-bottom:4px}
+  .desc-body .d-sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+  .desc-body .d-txt{font-size:19px;line-height:1.45;margin-bottom:20px;white-space:pre-wrap}
+  .desc-body .d-grid .stat{font-size:15px;padding:9px 0}
+  .btn-menu{font-size:16px;font-weight:900;padding:4px 10px;line-height:1;border-radius:6px}
   body.rf main{padding:8px}
   body.rf header{padding:8px 10px;gap:6px}
   body.rf header h1{font-size:13px}
@@ -182,8 +205,7 @@
   body.rf .alerta-num{font-size:44px}
   body.rf .alerta-btns button{padding:15px 18px;font-size:14px;min-width:120px}
   body.rf .minihead{font-size:10px}
-  body.rf .dots{padding:2px 8px;font-size:16px}
-  body.rf .menu button{padding:14px;font-size:15px}
+  body.rf .btn-menu{padding:8px 12px;font-size:18px}
   @media(max-width:640px){ .float{left:20px;width:auto} header h1{font-size:15px} }
 </style>
 </head>
@@ -197,8 +219,6 @@
   <button class="ghost" id="btnVista">🖥️ Vista laptop</button>
   <button class="ghost" id="themeBtn">🌙 Modo oscuro</button>
 </header>
-
-<div class="avisoNube" id="avisoNube">⚠️ No se pudo guardar en la nube. Revisa la conexión.</div>
 
 <main>
   <div class="tabs">
@@ -226,9 +246,9 @@
   <section id="tab-verde" style="display:none">
     <div class="panel">
       <h2><span class="badge verde">VERDE</span> &nbsp;Recepción — hoja PROV VERDE</h2>
-      <div class="sub">Se escanea el <b>CÓDIGO SKU</b>. Elige una placa para ver su contenido y escanear.</div>
+      <div class="sub">Se escanea la <b>ORDEN DE COMPRA</b>. Elige una placa para ver su contenido y escanear.</div>
       <div class="scanbar" id="scanVerdeBar">
-        <input id="scanVerde" placeholder="Escanea el CÓDIGO SKU y presiona Enter…">
+        <input id="scanVerde" placeholder="Escanea la ORDEN DE COMPRA y presiona Enter…">
         <button class="primary" id="btnScanVerde">Validar</button>
       </div>
       <div class="msg" id="msgVerde"></div>
@@ -287,53 +307,14 @@
   <div class="float-body" id="floatBody"></div>
 </div>
 
-<div class="menu" id="menu3"></div>
-
 <div class="modal" id="modal">
   <div class="modal-box">
-    <button class="xbtn ghost" id="btnXJust" title="Cerrar">✕</button>
     <h3 id="modalTitle">Justificar códigos pendientes</h3>
     <p id="modalSub"></p>
     <div id="justList"></div>
     <div class="rowbtns" style="margin-top:14px">
       <button class="ok" id="btnConfirmJust">Confirmar cierre con justificación</button>
       <button class="ghost" id="btnCancelJust">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal" id="modalRechazo">
-  <div class="modal-box">
-    <button class="xbtn ghost" id="btnXRechazo" title="Cerrar">✕</button>
-    <h3>Rechazar código</h3>
-    <p id="rechazoSub"></p>
-    <div style="margin-bottom:12px">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px">MOTIVO</div>
-      <div id="rechazoMotivos" style="display:flex;gap:8px;flex-wrap:wrap">
-        <button type="button" class="opt" data-motivo="Producto dañado">Producto dañado</button>
-        <button type="button" class="opt" data-motivo="Cantidad incorrecta">Cantidad incorrecta</button>
-        <button type="button" class="opt" data-motivo="Producto equivocado">Producto equivocado</button>
-        <button type="button" class="opt" data-motivo="Otro">Otro</button>
-      </div>
-    </div>
-    <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px">OBSERVACIÓN</div>
-    <input id="rechazoObs" placeholder="Escribe el detalle…" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:14px">
-    <div class="rowbtns" style="margin-top:14px">
-      <button class="ok" id="btnConfirmRechazo" style="background:var(--danger);border-color:var(--danger)">Confirmar rechazo</button>
-      <button class="ghost" id="btnCancelRechazo">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal" id="modalObs">
-  <div class="modal-box">
-    <button class="xbtn ghost" id="btnXObs" title="Cerrar">✕</button>
-    <h3>Observación</h3>
-    <p id="obsSub"></p>
-    <textarea id="obsTexto" rows="4" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit"></textarea>
-    <div class="rowbtns" style="margin-top:14px">
-      <button class="ok" id="btnConfirmObs">Guardar observación</button>
-      <button class="ghost" id="btnCancelObs">Cancelar</button>
     </div>
   </div>
 </div>
@@ -345,11 +326,27 @@
     <div class="alerta-cod" id="alertaCod"></div>
     <div class="alerta-desc" id="alertaDesc"></div>
     <div class="alerta-num" id="alertaNum" style="display:none"></div>
-    <div class="alerta-btns">
+    <div id="alertaExtra"></div>
+    <div class="alerta-btns" id="alertaBtns">
       <button class="ok" id="alertaOk">Entendido</button>
     </div>
   </div>
 </div>
+
+<div class="menu-row" id="menuRow">
+  <button id="menuRechazar" class="danger">🚫 Rechazar</button>
+  <button id="menuObs">📝 Observación</button>
+  <button id="menuVolver" class="volver">↩️ Volver a pendiente</button>
+</div>
+
+<div class="desc-full" id="descFull">
+  <div class="desc-head">
+    <strong>Descripción del producto</strong>
+    <button class="ghost" id="descClose">✕ Cerrar</button>
+  </div>
+  <div class="desc-body" id="descBody"></div>
+</div>
+
 <script>
 /* ===== CONEXIÓN A SUPABASE ===== */
 const SUPABASE_URL = 'https://oqfqcmvrwbxidlaaybgu.supabase.co';
@@ -365,27 +362,16 @@ let CERRADAS = { verde: {}, juntoz: {}, drop: {} };
 let placaPendiente = null;
 let placaSel = { verde: null, juntoz: null };
 let DIA = new Date().toISOString().slice(0,10);
-let NUBE_OK = true;
-let MENU_CTX = null;
-let RECHAZO_CTX = null;
-let OBS_CTX = null;
 
-/* ===== LISTAS ===== */
-const MARCAS_SENSIBLES = ['BMobile','Nokia','Alcatel','ZTE','TCL','Infinix','Tecno','itel','Realme',
-  'Oppo','Vivo','OnePlus','Pixel','Sony','LG','BlackBerry','Kazam','BLU','Wiko'];
-
-const RUTAS_ALERTA = [
-  { nombre:'BEXT',     color:'azul' },
-  { nombre:'COURIER',  color:'verde' },
-  { nombre:'SOTRANIC', color:'naranja' }
-];
+const SENSIBLES = ['CELULAR','SMARTPHONE','TELEFONO','MOVIL','TABLET','IPAD','LAPTOP','NOTEBOOK',
+  'PORTATIL','COMPUTADORA','IPHONE','SAMSUNG GALAXY','XIAOMI','REDMI','MOTOROLA','HONOR','HUAWEI',
+  'BMobile','Nokia','Alcatel','ZTE','TCL','Infinix','Tecno','itel','Realme','Oppo','Vivo','OnePlus',
+  'Pixel','Sony','LG','BlackBerry','Kazam','BLU','Wiko'];
 
 const norm = s => String(s ?? '').toUpperCase()
   .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
   .replace(/[\s\-_.]/g,'').trim();
-
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-
 const fechaExcel = v => {
   if (v == null || v === '') return '';
   if (typeof v === 'number'){
@@ -395,7 +381,6 @@ const fechaExcel = v => {
   return String(v);
 };
 
-/* ===== ROL Y VISTA ===== */
 function pedirRol(){
   if(ROL) return;
   const r = prompt('¿Este equipo es el RF que ESCANEA o la LAPTOP que solo MIRA?\n\nEscribe: RF  o  LAPTOP', 'RF');
@@ -450,19 +435,14 @@ function porPlaca(filas){
   return map;
 }
 
-/* --- CLAVES ---
-   VERDE: la clave lleva la PLACA delante, para que un mismo código
-   en otra placa cuente como otra recepción. */
+/* --- CLAVES: VERDE usa la ORDEN DE COMPRA --- */
 function clave(tipo, it){
-  if(tipo === 'verde'){
-    const placa = String(col(it,'PLACA') || 'SIN PLACA').trim();
-    return norm(placa) + '|' + norm(col(it,'ORDEN DE COMPRA','ORDEN DE COMPRA ','OC'));
-  }
+  if(tipo === 'verde') return norm(col(it,'ORDEN DE COMPRA','ORDENDE COMPRA','ORDEN'));
   if(tipo === 'juntoz') return norm(col(it,'PEDIDO'));
   return norm(col(it,'Nro. de pedido','NRO. DE PEDIDO','PEDIDO'));
 }
 function codigoDe(tipo, it){
-  if(tipo === 'verde') return col(it,'ORDEN DE COMPRA','ORDEN DE COMPRA ','OC');
+  if(tipo === 'verde') return col(it,'ORDEN DE COMPRA','ORDEN DE COMPRA','ORDEN');
   if(tipo === 'juntoz') return col(it,'PEDIDO');
   return col(it,'Nro. de pedido','NRO. DE PEDIDO','PEDIDO');
 }
@@ -474,9 +454,11 @@ function piezasDe(tipo, it){
   if(tipo === 'drop') return col(it,'Unid','UNID','Cantidad de productos');
   return col(it,'PIEZAS','CANTIDAD');
 }
+function marcaDe(tipo, it){
+  return col(it,'MARCA','Marca','FABRICANTE');
+}
 function placaDe(tipo, it){
-  if(tipo === 'drop') return 'DROP';
-  return String(col(it,'PLACA') || 'SIN PLACA').trim();
+  return tipo === 'drop' ? 'DROP' : String(col(it,'PLACA') || 'SIN PLACA').trim();
 }
 
 /* ===== CARGA DE VARIOS ARCHIVOS ===== */
@@ -548,12 +530,6 @@ async function terminarCarga(res){
 }
 
 /* ===== NUBE ===== */
-function avisarNube(){
-  const el = document.getElementById('avisoNube');
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 6000);
-}
-
 async function cargarDesdeNube(){
   try{
     const {data, error} = await sb.from('recepcion').select('*').eq('dia', DIA);
@@ -567,33 +543,26 @@ async function cargarDesdeNube(){
       } else {
         ESTADO[tipo][r.clave] = {
           ok: r.estado === 'validado',
-          just: (r.estado === 'justificado' || r.estado === 'rechazado' || r.estado === 'nollegó') ? r.motivo : '',
-          obs: r.observacion || '',
-          est: r.estado
+          just: r.estado === 'justificado' ? r.motivo : '',
+          obs: r.observacion || ''
         };
       }
     });
-    NUBE_OK = true;
     document.getElementById('syncInfo').textContent = '☁️ Sincronizado ' + new Date().toLocaleTimeString('es-PE');
     renderTodo();
   }catch(e){
-    NUBE_OK = false;
     document.getElementById('syncInfo').textContent = '⚠️ Sin conexión a la nube';
   }
 }
 
 async function guardarEnNube(tipo, placa, claveTxt, estado, motivo, observacion){
   try{
-    const {error} = await sb.from('recepcion').upsert({
+    await sb.from('recepcion').upsert({
       dia: DIA, hoja: tipo, placa: placa, clave: claveTxt,
       estado: estado, motivo: motivo || '', observacion: observacion || '',
       actualizado: new Date().toISOString()
     }, {onConflict: 'dia,hoja,placa,clave'});
-    if(error) throw error;
-  }catch(e){
-    console.warn('No se pudo guardar en la nube', e);
-    avisarNube();
-  }
+  }catch(e){ console.warn('No se pudo guardar en la nube', e); }
 }
 
 async function guardarProgramacionNube(){
@@ -619,10 +588,7 @@ async function guardarProgramacionNube(){
         if(error) throw error;
       }
     }
-  }catch(e){
-    console.warn('No se pudo publicar la programación', e);
-    avisarNube();
-  }
+  }catch(e){ console.warn('No se pudo publicar la programación', e); }
 }
 
 async function cargarProgramacionNube(){
@@ -662,6 +628,7 @@ document.getElementById('btnBajarProg').onclick = async () => {
   await cargarProgramacionNube();
   await cargarDesdeNube();
 };
+
 /* ===== RENDER ===== */
 function renderTodo(){
   renderHoja('verde');
@@ -700,26 +667,12 @@ function selPlaca(tipo, placa){
   if(input && ROL === 'rf') setTimeout(() => input.focus(), 50);
 }
 
-function pillEstado(tipo, k){
+function etiquetaEstado(tipo, it){
+  const k = clave(tipo, it);
   const est = ESTADO[tipo][k];
-  if(!est) return '<span class="pill pend">Pendiente</span>';
-  if(est.est === 'rechazado') return `<span class="pill just">✖ Rechazado</span>`;
-  if(est.est === 'nollegó' || est.just === 'No llegó') return '<span class="pill gris">No llegó</span>';
-  if(est.ok) return '<span class="pill ok">✔ Validado</span>';
+  if(!est) return `<span class="pill pend">Pendiente</span>`;
+  if(est.ok) return `<span class="pill ok">✔ Validado</span>`;
   return `<span class="pill just">${esc(est.just||'Justificado')}</span>`;
-}
-
-function claseFila(tipo, k){
-  const est = ESTADO[tipo][k];
-  if(!est) return '';
-  if(est.est === 'rechazado') return 'rechazado';
-  if(est.est === 'nollegó' || est.just === 'No llegó') return 'nollego';
-  return 'done';
-}
-
-function botonMenu(tipo, k){
-  if(ROL !== 'rf') return '';
-  return `<button class="dots ghost" onclick="abrirMenu(event,'${tipo}','${esc(k)}')">⋮</button>`;
 }
 
 function renderHoja(tipo){
@@ -744,7 +697,7 @@ function renderHoja(tipo){
     html += `<div class="placa">
       <div class="placa-head">
         <span class="code">🚚 ${esc(placa)}</span>
-        <span class="meta">${total} registro(s) • ${hechos} resuelto(s) • ${pct}%</span>
+        <span class="meta">${total} registro(s) • ${hechos} validado(s) • ${pct}%</span>
         <span class="spacer"></span>
         <span class="barcode" id="bc-${tipo}-${esc(placa)}"></span>
         ${ cerrada
@@ -756,23 +709,26 @@ function renderHoja(tipo){
         <thead><tr>
           <th>${tipo==='verde'?'Orden de compra':'Pedido'}</th>
           <th>Proveedor</th><th>Descripción</th><th>Piezas</th>
-          <th>Cliente</th><th>Ruta</th><th>Fecha</th><th>Estado</th><th></th>
+          <th>Cliente</th><th>Ruta</th><th>Fecha</th><th>Estado</th>
+          ${esRF?'<th></th>':''}
         </tr></thead>
         <tbody>`;
     items.forEach(it => {
       const k = clave(tipo,it);
+      const est = ESTADO[tipo][k];
       const desc = descDe(tipo,it);
-      const esRev = esSensible(desc);
-      html += `<tr class="${claseFila(tipo,k)} ${esRev?'revisar':''}">
+      const esRev = esSensible(desc, marcaDe(tipo,it));
+      const ruta = rutaDe(it);
+      html += `<tr class="${est?'done':''} ${esRev?'revisar':''}">
         <td><b>${esc(codigoDe(tipo,it))}</b></td>
         <td>${esc(col(it,'PROVEEDOR','PROVEEEDOR'))}</td>
         <td>${esc(desc)} ${esRev?'<span class="pill rev">REVISAR</span>':''}</td>
         <td>${esc(piezasDe(tipo,it))}</td>
         <td>${esc(col(it,'CLIENTE'))}</td>
-        <td>${esc(col(it,'RUTA'))}</td>
+        <td>${esc(col(it,'RUTA'))} ${ruta?`<span class="pill ruta ${ruta.clase}">${ruta.nombre}</span>`:''}</td>
         <td>${esc(fechaExcel(col(it,'FECHA DE ENTREGA A CLIENTE','FECHA')))}</td>
-        <td>${pillEstado(tipo,k)}</td>
-        <td>${botonMenu(tipo,k)}</td>
+        <td>${etiquetaEstado(tipo,it)}</td>
+        ${esRF?`<td><button class="btn-menu" onclick="abrirMenu(event,'${tipo}','${esc(placa)}','${esc(codigoDe(tipo,it))}')">⋮</button></td>`:''}
       </tr>`;
     });
     html += `</tbody></table></div>`;
@@ -796,10 +752,11 @@ function renderDrop(){
   }
   const hechos = filas.filter(it => ESTADO.drop[clave('drop',it)]).length;
   const cerrada = CERRADAS.drop['DROP'];
+  const esRF = ROL === 'rf';
   let html = `<div class="placa">
     <div class="placa-head">
       <span class="code">🟣 DROP del día</span>
-      <span class="meta">${filas.length} registro(s) • ${hechos} resuelto(s)</span>
+      <span class="meta">${filas.length} registro(s) • ${hechos} validado(s)</span>
       <span class="spacer"></span>
       ${ cerrada
           ? `<span class="pill ${cerrada.tipo==='completa'?'ok':'just'}">${cerrada.tipo==='completa'?'✔ Cerrado completo':'⚠ Cerrado con justificación'}</span>`
@@ -807,22 +764,25 @@ function renderDrop(){
     </div>
     <table><thead><tr>
       <th>Proveedor</th><th>Nro. de pedido</th><th>Provincia</th><th>Productos2</th>
-      <th>Unid</th><th>Peso2</th><th>Nombre cliente</th><th>Estado</th><th></th>
+      <th>Unid</th><th>Peso2</th><th>Nombre cliente</th><th>Estado</th>
+      ${esRF?'<th></th>':''}
     </tr></thead><tbody>`;
   filas.forEach(it => {
     const k = clave('drop',it);
+    const est = ESTADO.drop[k];
     const desc = descDe('drop',it);
-    const esRev = esSensible(desc);
-    html += `<tr class="${claseFila('drop',k)} ${esRev?'revisar':''}">
+    const esRev = esSensible(desc, marcaDe('drop',it));
+    const ruta = rutaDe(it);
+    html += `<tr class="${est?'done':''} ${esRev?'revisar':''}">
       <td>${esc(col(it,'PROVEEDOR'))}</td>
       <td><b>${esc(codigoDe('drop',it))}</b></td>
-      <td>${esc(col(it,'PROVINCIA'))}</td>
+      <td>${esc(col(it,'PROVINCIA'))} ${ruta?`<span class="pill ruta ${ruta.clase}">${ruta.nombre}</span>`:''}</td>
       <td>${esc(desc)} ${esRev?'<span class="pill rev">REVISAR</span>':''}</td>
       <td>${esc(col(it,'Unid','UNID'))}</td>
       <td>${esc(col(it,'Peso2','PESO2'))}</td>
       <td>${esc(col(it,'Nombre cliente','NOMBRE CLIENTE'))}</td>
-      <td>${pillEstado('drop',k)}</td>
-      <td>${botonMenu('drop',k)}</td>
+      <td>${etiquetaEstado('drop',it)}</td>
+      ${esRF?`<td><button class="btn-menu" onclick="abrirMenu(event,'drop','DROP','${esc(codigoDe('drop',it))}')">⋮</button></td>`:''}
     </tr>`;
   });
   html += `</tbody></table></div>`;
@@ -834,9 +794,9 @@ function buscarDuplicado(tipo, cod){
   const v = norm(cod);
   for(const t of ['verde','juntoz','drop']){
     if(t === tipo) continue;
-    const fila = DATA[t].find(it => norm(codigoDe(t,it)) === v);
+    const fila = DATA[t].find(it => clave(t,it) === v);
     if(fila){
-      const est = ESTADO[t][clave(t,it)];
+      const est = ESTADO[t][clave(t,fila)];
       if(est) return {tipo:t, placa: placaDe(t, fila)};
     }
   }
@@ -844,38 +804,31 @@ function buscarDuplicado(tipo, cod){
 }
 
 /* ===== ALERTAS ===== */
-function esSensible(desc){
-  const d = norm(desc);
-  return MARCAS_SENSIBLES.some(m => d.includes(norm(m)));
+function esSensible(desc, marca){
+  const d = norm(desc) + ' ' + norm(marca);
+  return SENSIBLES.some(p => d.includes(norm(p)));
 }
 
+const RUTAS = [
+  {clase:'bext', nombre:'BEXT', claves:['BEXT']},
+  {clase:'courier', nombre:'COURIER', claves:['COURIER']},
+  {clase:'sotranic', nombre:'SOTRANIC', claves:['SOTRANIC']}
+];
 function rutaDe(it){
-  const r = norm(col(it,'RUTA','PROVINCIA','DESTINO'));
-  return RUTAS_ALERTA.find(x => r.startsWith(norm(x.nombre))) || null;
-}
-
-function piezasTotales(tipo, codigo){
-  const v = norm(codigo);
-  let suma = 0;
-  DATA[tipo].forEach(it => {
-    if(norm(codigoDe(tipo,it)) === v){
-      suma += Number(String(piezasDe(tipo,it)).replace(/[^\d.]/g,'')) || 0;
-    }
-  });
-  return suma;
+  const txt = norm(col(it,'RUTA','PROVINCIA','TRANSPORTE','AGENCIA'));
+  if(!txt) return null;
+  return RUTAS.find(r => r.claves.some(c => txt.startsWith(norm(c)))) || null;
 }
 
 let alertaResolvers = [];
-function mostrarAlerta({titulo, ico, cod, desc, cantidad, peligro, ruta}){
+function mostrarAlerta({titulo, ico, cod, desc, cantidad, peligro, clase, bloques}){
   return new Promise(resolve => {
     const box = document.getElementById('alertaBox');
-    box.className = 'alerta-box' + (peligro ? ' peligro' : '') + (cantidad ? ' cant' : '');
+    box.className = 'alerta-box' + (peligro ? ' peligro' : '') + (cantidad ? ' cant' : '') + (clase ? ' ' + clase : '');
     document.getElementById('alertaIco').textContent = ico || '⚠️';
     document.getElementById('alertaTit').textContent = titulo;
     document.getElementById('alertaCod').textContent = cod || '';
-    let d = desc || '';
-    if(ruta) d += ` · RUTA ${ruta.nombre}`;
-    document.getElementById('alertaDesc').textContent = d;
+    document.getElementById('alertaDesc').textContent = desc || '';
     const num = document.getElementById('alertaNum');
     if(cantidad){
       num.style.display = 'block';
@@ -883,6 +836,9 @@ function mostrarAlerta({titulo, ico, cod, desc, cantidad, peligro, ruta}){
     } else {
       num.style.display = 'none';
     }
+    const extra = document.getElementById('alertaExtra');
+    extra.innerHTML = (bloques || []).map(b =>
+      `<div class="alerta-bloque"><b>${esc(b.titulo)}</b>${esc(b.texto)}</div>`).join('');
     document.getElementById('alerta').classList.add('show');
     alertaResolvers.push(resolve);
   });
@@ -900,7 +856,6 @@ document.addEventListener('keydown', e => {
     e.preventDefault(); cerrarAlerta();
   }
 });
-
 /* ===== ESCANEO ===== */
 async function validar(tipo, valor){
   const msgId = tipo==='verde'?'msgVerde':(tipo==='juntoz'?'msgJuntoz':'msgDrop');
@@ -914,7 +869,7 @@ async function validar(tipo, valor){
   if(!filas.length){
     msg.className='msg bad show'; msg.textContent='Primero carga el Excel de programación.'; return;
   }
-  const encontrados = filas.filter(it => norm(codigoDe(tipo,it)) === v);
+  const encontrados = filas.filter(it => clave(tipo,it) === v);
   if(!encontrados.length){
     msg.className='msg bad show';
     msg.textContent = `⚠ "${valor}" no está en la programación de ${tipo==='verde'?'VERDE':(tipo==='juntoz'?'JUNTOZ':'DROP')}.`;
@@ -922,34 +877,58 @@ async function validar(tipo, valor){
   }
 
   const dup = buscarDuplicado(tipo, valor);
+
   const it0 = encontrados[0];
   const desc = descDe(tipo, it0);
-  const totalPiezas = piezasTotales(tipo, valor);
-  const sensible = esSensible(desc);
+  const marca = marcaDe(tipo, it0);
+  const placa = placaDe(tipo, it0);
   const ruta = rutaDe(it0);
-  const muchaCant = totalPiezas >= 2;
+
+  /* Suma de piezas de esa orden de compra en esa placa */
+  const piezasTotales = encontrados
+    .filter(it => placaDe(tipo,it) === placa)
+    .reduce((s,it) => s + (Number(String(piezasDe(tipo,it)).replace(/[^\d.]/g,'')) || 0), 0);
+
+  const sensible = esSensible(desc, marca);
+  const muchaCant = piezasTotales >= 2;
 
   if(sensible || muchaCant || ruta){
-    const partes = [];
-    if(sensible) partes.push('PRODUCTO SENSIBLE');
-    if(muchaCant) partes.push('VALIDAR CANTIDAD');
-    if(ruta) partes.push('RUTA ' + ruta.nombre);
+    const bloques = [];
+    if(sensible) bloques.push({titulo:'Producto sensible', texto: (marca ? marca + ' — ' : '') + desc});
+    if(ruta) bloques.push({titulo:'Ruta', texto: ruta.nombre + ' (' + col(it0,'RUTA','PROVINCIA') + ')'});
+    if(dup) bloques.push({titulo:'Duplicado', texto: 'Ya se escaneó en ' + dup.tipo.toUpperCase() + ' (placa ' + dup.placa + ')'});
+
+    const titulos = [];
+    if(sensible) titulos.push('PRODUCTO SENSIBLE');
+    if(muchaCant) titulos.push('VALIDAR CANTIDAD');
+    if(ruta) titulos.push('RUTA ' + ruta.nombre);
+
     await mostrarAlerta({
-      titulo: partes.join(' · '),
+      titulo: titulos.join(' · '),
       ico: sensible ? '📱' : (muchaCant ? '🔢' : '🚚'),
       cod: valor,
       desc: desc,
-      cantidad: muchaCant ? totalPiezas : null,
+      cantidad: muchaCant ? piezasTotales : null,
       peligro: sensible,
-      ruta: ruta
+      clase: ruta ? 'ruta-' + ruta.clase : '',
+      bloques
     });
+
+    if(muchaCant){
+      const coincide = await preguntarCantidad(piezasTotales);
+      if(!coincide){
+        msg.className='msg warn show';
+        msg.textContent = `⚠ Cantidad no coincide (${piezasTotales} según Excel). Revisa antes de validar.`;
+        return;
+      }
+    }
   }
 
   let nuevos = 0;
   for(const it of encontrados){
     const k = clave(tipo,it);
     if(!ESTADO[tipo][k]){
-      ESTADO[tipo][k] = {ok:true, est:'validado'};
+      ESTADO[tipo][k] = {ok:true};
       nuevos++;
       await guardarEnNube(tipo, placaDe(tipo,it), k, 'validado', '', '');
     }
@@ -961,6 +940,34 @@ async function validar(tipo, valor){
   msg.className = dup ? 'msg warn show' : 'msg good show';
   msg.textContent = txt;
   renderTodo();
+}
+
+/* Pregunta Coincide / No coincide para la cantidad */
+function preguntarCantidad(cant){
+  return new Promise(resolve => {
+    const box = document.getElementById('alertaBox');
+    box.className = 'alerta-box cant';
+    document.getElementById('alertaIco').textContent = '🔢';
+    document.getElementById('alertaTit').textContent = 'VALIDAR CANTIDAD';
+    document.getElementById('alertaCod').textContent = '';
+    document.getElementById('alertaDesc').textContent = '¿La cantidad física coincide con el Excel?';
+    const num = document.getElementById('alertaNum');
+    num.style.display = 'block';
+    num.textContent = cant + (cant === 1 ? ' pieza' : ' piezas');
+    document.getElementById('alertaExtra').innerHTML = '';
+    const btns = document.getElementById('alertaBtns');
+    btns.innerHTML = `<button class="ok" id="cantSi">✔ Coincide</button>
+                      <button class="danger" id="cantNo">✖ No coincide</button>`;
+    document.getElementById('alerta').classList.add('show');
+    const fin = val => {
+      document.getElementById('alerta').classList.remove('show');
+      btns.innerHTML = `<button class="ok" id="alertaOk">Entendido</button>`;
+      document.getElementById('alertaOk').onclick = cerrarAlerta;
+      resolve(val);
+    };
+    document.getElementById('cantSi').onclick = () => fin(true);
+    document.getElementById('cantNo').onclick = () => fin(false);
+  });
 }
 
 document.getElementById('btnScanVerde').onclick = () => {
@@ -983,132 +990,139 @@ document.getElementById('scanDrop').onkeydown = e => {
 };
 
 /* ===== MENÚ DE TRES PUNTOS ===== */
-function abrirMenu(ev, tipo, k){
+let menuActual = null;
+function abrirMenu(ev, tipo, placa, cod){
   ev.stopPropagation();
-  MENU_CTX = {tipo, k};
-  const menu = document.getElementById('menu3');
-  const est = ESTADO[tipo][k];
-  let html = '';
-  if(est && est.est === 'rechazado'){
-    html += `<button class="gris" onclick="volverPendiente()">↩ Volver a pendiente</button>`;
-  } else {
-    html += `<button class="danger" onclick="abrirRechazo()">✖ Rechazar</button>`;
-  }
-  html += `<button onclick="abrirObs()">📝 Observación</button>`;
-  menu.innerHTML = html;
-  menu.style.left = Math.min(ev.clientX, window.innerWidth - 230) + 'px';
-  menu.style.top = (ev.clientY + 8) + 'px';
-  menu.classList.add('show');
+  menuActual = {tipo, placa, cod};
+  const m = document.getElementById('menuRow');
+  const r = ev.target.getBoundingClientRect();
+  m.style.left = Math.max(8, Math.min(r.left - 170, window.innerWidth - 228)) + 'px';
+  m.style.top = Math.min(r.bottom + 6, window.innerHeight - 190) + 'px';
+  m.classList.add('show');
 }
+document.addEventListener('click', () => document.getElementById('menuRow').classList.remove('show'));
 
-function cerrarMenu(){
-  document.getElementById('menu3').classList.remove('show');
-  MENU_CTX = null;
-}
-document.addEventListener('click', cerrarMenu);
-document.getElementById('menu3').onclick = e => e.stopPropagation();
-
-function itemDeCtx(){
-  if(!MENU_CTX) return null;
-  const {tipo, k} = MENU_CTX;
-  const filas = tipo === 'drop' ? DATA.drop : DATA[tipo];
-  return filas.find(it => clave(tipo,it) === k) || null;
-}
-
-async function volverPendiente(){
-  if(!MENU_CTX) return;
-  const {tipo, k} = MENU_CTX;
-  const it = itemDeCtx();
-  const placa = it ? placaDe(tipo, it) : (tipo==='drop'?'DROP':'');
+document.getElementById('menuRechazar').onclick = () => {
+  if(!menuActual) return;
+  document.getElementById('menuRow').classList.remove('show');
+  abrirRechazo(menuActual);
+};
+document.getElementById('menuObs').onclick = () => {
+  if(!menuActual) return;
+  document.getElementById('menuRow').classList.remove('show');
+  abrirObservacion(menuActual);
+};
+document.getElementById('menuVolver').onclick = async () => {
+  if(!menuActual) return;
+  document.getElementById('menuRow').classList.remove('show');
+  const {tipo, placa, cod} = menuActual;
+  const k = norm(cod);
   delete ESTADO[tipo][k];
-  await sb.from('recepcion').delete().eq('dia', DIA).eq('hoja', tipo).eq('placa', placa).eq('clave', k);
-  cerrarMenu();
+  await guardarEnNube(tipo, placa, k, 'pendiente', '', '');
   renderTodo();
-}
+};
 
-/* --- RECHAZO --- */
-let rechazoMotivo = '';
-function abrirRechazo(){
-  if(!MENU_CTX) return;
-  const it = itemDeCtx();
-  RECHAZO_CTX = {...MENU_CTX};
-  rechazoMotivo = '';
-  document.getElementById('rechazoSub').textContent =
-    it ? `${codigoDe(RECHAZO_CTX.tipo, it)} — ${descDe(RECHAZO_CTX.tipo, it)}` : '';
-  document.getElementById('rechazoObs').value = '';
-  document.querySelectorAll('#rechazoMotivos .opt').forEach(b => b.classList.remove('sel'));
-  document.getElementById('modalRechazo').classList.add('show');
-  cerrarMenu();
-}
-
-document.querySelectorAll('#rechazoMotivos .opt').forEach(b => {
-  b.onclick = () => {
-    document.querySelectorAll('#rechazoMotivos .opt').forEach(x => x.classList.remove('sel'));
-    b.classList.add('sel');
-    rechazoMotivo = b.dataset.motivo;
+/* Rechazo: motivo + observación, se aplica al momento */
+function abrirRechazo({tipo, placa, cod}){
+  const box = document.getElementById('alertaBox');
+  box.className = 'alerta-box peligro';
+  document.getElementById('alertaIco').textContent = '🚫';
+  document.getElementById('alertaTit').textContent = 'RECHAZAR';
+  document.getElementById('alertaCod').textContent = cod;
+  document.getElementById('alertaDesc').textContent = 'Elige el motivo del rechazo.';
+  document.getElementById('alertaNum').style.display = 'none';
+  const extra = document.getElementById('alertaExtra');
+  extra.innerHTML = `
+    <div class="alerta-bloque">
+      <b>Motivo</b>
+      <div class="rowbtns" style="margin-top:6px">
+        <button class="opt-motivo" data-m="Rechazado">Rechazado</button>
+        <button class="opt-motivo" data-m="No llegó">No llegó</button>
+      </div>
+    </div>
+    <div class="alerta-bloque">
+      <b>Observación</b>
+      <input id="rechObs" placeholder="Observación (opcional)"
+        style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:15px">
+    </div>`;
+  const btns = document.getElementById('alertaBtns');
+  btns.innerHTML = `<button class="danger" id="rechOk">Confirmar rechazo</button>
+                    <button class="ghost" id="rechCancel">Cancelar</button>`;
+  let motivo = '';
+  extra.querySelectorAll('.opt-motivo').forEach(b => {
+    b.onclick = () => {
+      extra.querySelectorAll('.opt-motivo').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+      motivo = b.dataset.m;
+    };
+  });
+  const cerrar = () => {
+    document.getElementById('alerta').classList.remove('show');
+    btns.innerHTML = `<button class="ok" id="alertaOk">Entendido</button>`;
+    document.getElementById('alertaOk').onclick = cerrarAlerta;
   };
-});
-
-document.getElementById('btnCancelRechazo').onclick =
-document.getElementById('btnXRechazo').onclick = () => {
-  document.getElementById('modalRechazo').classList.remove('show');
-  RECHAZO_CTX = null;
-};
-
-document.getElementById('btnConfirmRechazo').onclick = async () => {
-  if(!RECHAZO_CTX) return;
-  if(!rechazoMotivo){ alert('Elige un motivo del rechazo.'); return; }
-  const {tipo, k} = RECHAZO_CTX;
-  const obs = document.getElementById('rechazoObs').value.trim();
-  const filas = tipo === 'drop' ? DATA.drop : DATA[tipo];
-  const it = filas.find(x => clave(tipo,x) === k);
-  const placa = it ? placaDe(tipo, it) : (tipo==='drop'?'DROP':'');
-  ESTADO[tipo][k] = {ok:false, just:rechazoMotivo, obs:obs, est:'rechazado'};
-  await guardarEnNube(tipo, placa, k, 'rechazado', rechazoMotivo, obs);
-  document.getElementById('modalRechazo').classList.remove('show');
-  RECHAZO_CTX = null;
-  renderTodo();
-};
-
-/* --- OBSERVACIÓN --- */
-function abrirObs(){
-  if(!MENU_CTX) return;
-  const it = itemDeCtx();
-  OBS_CTX = {...MENU_CTX};
-  document.getElementById('obsSub').textContent =
-    it ? `${codigoDe(OBS_CTX.tipo, it)} — ${descDe(OBS_CTX.tipo, it)}` : '';
-  const est = ESTADO[OBS_CTX.tipo][OBS_CTX.k];
-  document.getElementById('obsTexto').value = est && est.obs ? est.obs : '';
-  document.getElementById('modalObs').classList.add('show');
-  cerrarMenu();
+  document.getElementById('rechCancel').onclick = cerrar;
+  document.getElementById('rechOk').onclick = async () => {
+    if(!motivo){ document.getElementById('alertaDesc').textContent = 'Debes elegir un motivo.'; return; }
+    const obs = document.getElementById('rechObs').value.trim();
+    ESTADO[tipo][norm(cod)] = {ok:false, just:motivo, obs};
+    await guardarEnNube(tipo, placa, norm(cod), 'justificado', motivo, obs);
+    cerrar();
+    renderTodo();
+  };
+  document.getElementById('alerta').classList.add('show');
 }
 
-document.getElementById('btnCancelObs').onclick =
-document.getElementById('btnXObs').onclick = () => {
-  document.getElementById('modalObs').classList.remove('show');
-  OBS_CTX = null;
-};
+/* Observación simple */
+function abrirObservacion({tipo, placa, cod}){
+  const actual = ESTADO[tipo][norm(cod)] || {};
+  const box = document.getElementById('alertaBox');
+  box.className = 'alerta-box';
+  document.getElementById('alertaIco').textContent = '📝';
+  document.getElementById('alertaTit').textContent = 'OBSERVACIÓN';
+  document.getElementById('alertaCod').textContent = cod;
+  document.getElementById('alertaDesc').textContent = 'Escribe la observación.';
+  document.getElementById('alertaNum').style.display = 'none';
+  document.getElementById('alertaExtra').innerHTML = `
+    <div class="alerta-bloque">
+      <b>Observación</b>
+      <input id="obsTxt" value="${esc(actual.obs||'')}" placeholder="Observación"
+        style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:15px">
+    </div>`;
+  const btns = document.getElementById('alertaBtns');
+  btns.innerHTML = `<button class="ok" id="obsOk">Guardar</button>
+                    <button class="ghost" id="obsCancel">Cancelar</button>`;
+  const cerrar = () => {
+    document.getElementById('alerta').classList.remove('show');
+    btns.innerHTML = `<button class="ok" id="alertaOk">Entendido</button>`;
+    document.getElementById('alertaOk').onclick = cerrarAlerta;
+  };
+  document.getElementById('obsCancel').onclick = cerrar;
+  document.getElementById('obsOk').onclick = async () => {
+    const obs = document.getElementById('obsTxt').value.trim();
+    const est = ESTADO[tipo][norm(cod)] || {ok:false, just:''};
+    est.obs = obs;
+    ESTADO[tipo][norm(cod)] = est;
+    await guardarEnNube(tipo, placa, norm(cod), est.ok ? 'validado' : (est.just ? 'justificado' : 'pendiente'), est.just || '', obs);
+    cerrar();
+    renderTodo();
+  };
+  document.getElementById('alerta').classList.add('show');
+}
 
-document.getElementById('btnConfirmObs').onclick = async () => {
-  if(!OBS_CTX) return;
-  const {tipo, k} = OBS_CTX;
-  const obs = document.getElementById('obsTexto').value.trim();
-  const filas = tipo === 'drop' ? DATA.drop : DATA[tipo];
-  const it = filas.find(x => clave(tipo,x) === k);
-  const placa = it ? placaDe(tipo, it) : (tipo==='drop'?'DROP':'');
-  const est = ESTADO[tipo][k] || {ok:false, just:'', est:'observado'};
-  est.obs = obs;
-  if(!est.est) est.est = 'observado';
-  ESTADO[tipo][k] = est;
-  await guardarEnNube(tipo, placa, k, est.est, est.just || '', obs);
-  document.getElementById('modalObs').classList.remove('show');
-  OBS_CTX = null;
-  renderTodo();
-};
+/* ===== DESCRIPCIÓN A PANTALLA COMPLETA ===== */
+function abrirDescripcion(cod, desc, extra){
+  document.getElementById('descBody').innerHTML = `
+    <div class="d-cod">${esc(cod)}</div>
+    <div class="d-sub">${esc(extra||'')}</div>
+    <div class="d-txt">${esc(desc)}</div>`;
+  document.getElementById('descFull').classList.add('show');
+}
+document.getElementById('descClose').onclick = () => document.getElementById('descFull').classList.remove('show');
 
 /* ===== CIERRE DE PLACA ===== */
 async function cerrarPlaca(tipo, placa){
-  if(ROL !== 'rf'){ alert('Solo el RF puede cerrar placas.'); return; }
+  if(ROL !== 'rf'){ mostrarAviso('Solo el RF puede cerrar placas.'); return; }
   const items = porPlaca(DATA[tipo]).get(placa) || [];
   const pendientes = items.filter(it => !ESTADO[tipo][clave(tipo,it)]);
   if(!pendientes.length){
@@ -1121,7 +1135,7 @@ async function cerrarPlaca(tipo, placa){
 }
 
 document.getElementById('btnCerrarDrop').onclick = async () => {
-  if(ROL !== 'rf'){ alert('Solo el RF puede cerrar.'); return; }
+  if(ROL !== 'rf'){ mostrarAviso('Solo el RF puede cerrar.'); return; }
   const pendientes = DATA.drop.filter(it => !ESTADO.drop[clave('drop',it)]);
   if(!pendientes.length){
     CERRADAS.drop['DROP'] = {tipo:'completa'};
@@ -1131,6 +1145,22 @@ document.getElementById('btnCerrarDrop').onclick = async () => {
   }
   abrirJustificacion('drop', 'DROP', pendientes);
 };
+
+/* Aviso propio grande, en lugar de alert() */
+function mostrarAviso(texto){
+  const box = document.getElementById('alertaBox');
+  box.className = 'alerta-box cant';
+  document.getElementById('alertaIco').textContent = 'ℹ️';
+  document.getElementById('alertaTit').textContent = 'AVISO';
+  document.getElementById('alertaCod').textContent = '';
+  document.getElementById('alertaDesc').textContent = texto;
+  document.getElementById('alertaNum').style.display = 'none';
+  document.getElementById('alertaExtra').innerHTML = '';
+  const btns = document.getElementById('alertaBtns');
+  btns.innerHTML = `<button class="ok" id="alertaOk">Entendido</button>`;
+  document.getElementById('alertaOk').onclick = cerrarAlerta;
+  document.getElementById('alerta').classList.add('show');
+}
 
 function abrirJustificacion(tipo, placa, pendientes){
   placaPendiente = {tipo, placa};
@@ -1145,6 +1175,7 @@ function abrirJustificacion(tipo, placa, pendientes){
       <div class="c">${esc(cod)} — ${esc(descDe(tipo,it))}</div>
       <div class="opts" data-cod="${esc(cod)}">
         <button type="button" class="opt" data-motivo="No llegó">No llegó</button>
+        <button type="button" class="opt" data-motivo="Rechazado">Rechazado</button>
       </div>
       <input placeholder="Observación (opcional)" data-obs="${esc(cod)}">
     </div>`;
@@ -1161,8 +1192,7 @@ function abrirJustificacion(tipo, placa, pendientes){
   document.getElementById('modal').classList.add('show');
 }
 
-document.getElementById('btnCancelJust').onclick =
-document.getElementById('btnXJust').onclick = () => {
+document.getElementById('btnCancelJust').onclick = () => {
   document.getElementById('modal').classList.remove('show');
   placaPendiente = null;
 };
@@ -1174,7 +1204,7 @@ document.getElementById('btnConfirmJust').onclick = async () => {
   let faltan = false;
   grupos.forEach(g => { if(!g.dataset.sel) faltan = true; });
   if(faltan){
-    alert('Debes marcar "No llegó" en cada código pendiente.');
+    mostrarAviso('Debes elegir un motivo (No llegó o Rechazado) para cada código pendiente.');
     return;
   }
   for(const g of grupos){
@@ -1184,8 +1214,8 @@ document.getElementById('btnConfirmJust').onclick = async () => {
     const items = tipo==='drop' ? DATA.drop : (porPlaca(DATA[tipo]).get(placa) || []);
     for(const it of items){
       if(String(codigoDe(tipo,it)) === cod){
-        ESTADO[tipo][clave(tipo,it)] = {ok:false, just:motivo, obs: obs ? obs.value.trim() : '', est:'nollegó'};
-        await guardarEnNube(tipo, placa, clave(tipo,it), 'nollegó', motivo, obs ? obs.value.trim() : '');
+        ESTADO[tipo][clave(tipo,it)] = {ok:false, just:motivo, obs: obs ? obs.value.trim() : ''};
+        await guardarEnNube(tipo, placa, clave(tipo,it), 'justificado', motivo, obs ? obs.value.trim() : '');
       }
     }
   }
@@ -1224,14 +1254,6 @@ function statsTipo(tipo){
   return {total, ok, just, avanzados, faltanCod, placasTotal, placasAvanz, placasFaltan};
 }
 
-function piezasProgramadas(tipo){
-  let suma = 0;
-  DATA[tipo].forEach(it => {
-    suma += Number(String(piezasDe(tipo,it)).replace(/[^\d.]/g,'')) || 0;
-  });
-  return suma;
-}
-
 /* ===== CIERRE DEL DÍA ===== */
 function renderCierre(){
   const box = document.getElementById('cierreBox');
@@ -1247,25 +1269,24 @@ function renderCierre(){
     const justificados = [];
     filas.forEach(it => {
       const e = ESTADO[tipo][clave(tipo,it)];
-      if(e && !e.ok){
+      if(e && e.just){
         justificados.push({placa: placaDe(tipo,it), cod: codigoDe(tipo,it),
-                           desc: descDe(tipo,it), motivo:e.just||'', obs:e.obs||''});
+                           desc: descDe(tipo,it), motivo:e.just, obs:e.obs||''});
       }
     });
     const nombre = tipo==='verde'?'VERDE':(tipo==='juntoz'?'JUNTOZ':'DROP');
     html += `<div class="panel">
       <h2><span class="badge ${tipo}">${nombre}</span></h2>
       <div class="stat"><span>Registros totales</span><b>${s.total}</b></div>
-      <div class="stat"><span>Piezas programadas</span><b>${piezasProgramadas(tipo)}</b></div>
-      <div class="stat"><span>Resueltos (validados + rechazados + no llegó)</span><b>${s.avanzados}</b></div>
-      <div class="stat"><span>· Validados</span><b>${s.ok}</b></div>
-      <div class="stat"><span>· Rechazados / No llegó</span><b>${s.just}</b></div>
+      <div class="stat"><span>Avanzados (escaneados + justificados)</span><b>${s.avanzados}</b></div>
+      <div class="stat"><span>· Escaneados</span><b>${s.ok}</b></div>
+      <div class="stat"><span>· Justificados</span><b>${s.just}</b></div>
       <div class="stat"><span>Códigos que faltan validar</span><b>${s.faltanCod}</b></div>
       <div class="stat"><span>Placas totales</span><b>${s.placasTotal}</b></div>
       <div class="stat"><span>Placas avanzadas</span><b>${s.placasAvanz}</b></div>
       <div class="stat"><span>Placas que faltan validar</span><b>${s.placasFaltan}</b></div>
       ${ justificados.length ? `
-        <h3 style="font-size:14px;margin:16px 0 8px">Códigos no validados (${justificados.length})</h3>
+        <h3 style="font-size:14px;margin:16px 0 8px">Códigos justificados (${justificados.length})</h3>
         <table><thead><tr><th>Placa</th><th>Código</th><th>Descripción</th><th>Motivo</th><th>Observación</th></tr></thead><tbody>
         ${justificados.map(j=>`<tr><td><b>${esc(j.placa)}</b></td><td>${esc(j.cod)}</td><td>${esc(j.desc)}</td><td>${esc(j.motivo)}</td><td>${esc(j.obs)}</td></tr>`).join('')}
         </tbody></table>` : '' }
@@ -1288,37 +1309,38 @@ function renderFloat(){
   ['verde','juntoz'].forEach(tipo => {
     if(!DATA[tipo].length) return;
     const s = statsTipo(tipo);
+    const piezas = DATA[tipo].reduce((a,it) => a + (Number(String(piezasDe(tipo,it)).replace(/[^\d.]/g,'')) || 0), 0);
+    gPiezas += piezas;
     gTotal += s.total; gAvanz += s.avanzados; gFaltan += s.faltanCod;
     gPlacas += s.placasTotal; gPlacasAvanz += s.placasAvanz; gPlacasFaltan += s.placasFaltan;
-    gPiezas += piezasProgramadas(tipo);
     html += `<div style="margin-bottom:10px">
       <div class="stat"><span><span class="badge ${tipo}">${tipo==='verde'?'VERDE':'JUNTOZ'}</span></span><b>${s.avanzados}/${s.total}</b></div>
-      <div class="stat"><span>Piezas programadas</span><b>${piezasProgramadas(tipo)}</b></div>
       <div class="stat"><span>Faltan validar</span><b>${s.faltanCod}</b></div>
-      <div class="stat"><span>Placas</span><b>
       <div class="stat"><span>Placas</span><b>${s.placasTotal}</b></div>
       <div class="stat"><span>Placas por validar</span><b>${s.placasFaltan}</b></div>
+      <div class="stat"><span>Piezas programadas</span><b>${piezas}</b></div>
     </div>`;
   });
 
   if(DATA.drop.length){
     const s = statsTipo('drop');
+    const piezas = DATA.drop.reduce((a,it) => a + (Number(String(piezasDe('drop',it)).replace(/[^\d.]/g,'')) || 0), 0);
+    gPiezas += piezas;
     gTotal += s.total; gAvanz += s.avanzados; gFaltan += s.faltanCod;
     gPlacas += s.placasTotal; gPlacasAvanz += s.placasAvanz; gPlacasFaltan += s.placasFaltan;
-    gPiezas += piezasProgramadas('drop');
     html += `<div style="margin-bottom:10px">
       <div class="stat"><span><span class="badge drop">DROP</span></span><b>${s.avanzados}/${s.total}</b></div>
-      <div class="stat"><span>Piezas programadas</span><b>${piezasProgramadas('drop')}</b></div>
       <div class="stat"><span>Faltan validar</span><b>${s.faltanCod}</b></div>
       <div class="stat"><span>Cerrado</span><b>${s.placasAvanz?'Sí':'No'}</b></div>
+      <div class="stat"><span>Piezas programadas</span><b>${piezas}</b></div>
     </div>`;
   }
 
   html += `<div class="minihead">Total general</div>
     <div class="stat"><span>Códigos totales</span><b>${gTotal}</b></div>
-    <div class="stat"><span>Piezas programadas del día</span><b>${gPiezas}</b></div>
-    <div class="stat"><span>Resueltos</span><b>${gAvanz}</b></div>
+    <div class="stat"><span>Avanzados</span><b>${gAvanz}</b></div>
     <div class="stat"><span>Faltan validar</span><b>${gFaltan}</b></div>
+    <div class="stat"><span>Piezas programadas del día</span><b>${gPiezas}</b></div>
     <div class="stat"><span>Placas totales</span><b>${gPlacas}</b></div>
     <div class="stat"><span>Placas avanzadas</span><b>${gPlacasAvanz}</b></div>
     <div class="stat"><span>Placas faltan validar</span><b>${gPlacasFaltan}</b></div>`;
@@ -1359,13 +1381,13 @@ document.getElementById('themeBtn').onclick = () => {
 };
 
 /* ===== EXPORTAR ===== */
-document.getElementById('btnExport').onclick = () => {
+function filasExport(){
   const rows = [];
   ['verde','juntoz'].forEach(tipo => {
     porPlaca(DATA[tipo]).forEach((items, placa) => {
       items.forEach(it => {
         const e = ESTADO[tipo][clave(tipo,it)] || {};
-        const r = rutaDe(it);
+        const ruta = rutaDe(it);
         rows.push({
           HOJA: tipo==='verde'?'VERDE':'JUNTOZ',
           PLACA: placa,
@@ -1373,19 +1395,18 @@ document.getElementById('btnExport').onclick = () => {
           DESCRIPCION: descDe(tipo,it),
           PIEZAS: piezasDe(tipo,it),
           CLIENTE: col(it,'CLIENTE'),
-          RUTA: col(it,'RUTA'),
-          RUTA_ALERTA: r ? r.nombre : '',
-          ESTADO: e.ok ? 'VALIDADO' : (e.est === 'rechazado' ? 'RECHAZADO' : (e.est === 'nollegó' ? 'NO LLEGÓ' : (e.just ? 'JUSTIFICADO' : 'PENDIENTE'))),
+          RUTA: ruta ? ruta.nombre : col(it,'RUTA'),
+          ESTADO: e.ok ? 'VALIDADO' : (e.just ? 'JUSTIFICADO' : 'PENDIENTE'),
           MOTIVO: e.just || '',
           OBSERVACION: e.obs || '',
-          CIERRE_PLACA: CERRADAS[tipo][placa]?.tipo || 'ABIERTA'
+          CIERRE_PLACA: (CERRADAS[tipo][placa]?.tipo || 'ABIERTA').toUpperCase()
         });
       });
     });
   });
   DATA.drop.forEach(it => {
     const e = ESTADO.drop[clave('drop',it)] || {};
-    const r = rutaDe(it);
+    const ruta = rutaDe(it);
     rows.push({
       HOJA: 'DROP',
       PLACA: 'DROP',
@@ -1393,19 +1414,28 @@ document.getElementById('btnExport').onclick = () => {
       DESCRIPCION: descDe('drop',it),
       PIEZAS: piezasDe('drop',it),
       CLIENTE: col(it,'Nombre cliente','NOMBRE CLIENTE'),
-      RUTA: col(it,'PROVINCIA'),
-      RUTA_ALERTA: r ? r.nombre : '',
-      ESTADO: e.ok ? 'VALIDADO' : (e.est === 'rechazado' ? 'RECHAZADO' : (e.est === 'nollegó' ? 'NO LLEGÓ' : (e.just ? 'JUSTIFICADO' : 'PENDIENTE'))),
+      RUTA: ruta ? ruta.nombre : col(it,'PROVINCIA'),
+      ESTADO: e.ok ? 'VALIDADO' : (e.just ? 'JUSTIFICADO' : 'PENDIENTE'),
       MOTIVO: e.just || '',
       OBSERVACION: e.obs || '',
-      CIERRE_PLACA: CERRADAS.drop['DROP']?.tipo || 'ABIERTA'
+      CIERRE_PLACA: (CERRADAS.drop['DROP']?.tipo || 'ABIERTA').toUpperCase()
     });
   });
-  if(!rows.length){ alert('No hay datos para exportar.'); return; }
+  return rows;
+}
+
+function descargarCierre(){
+  const rows = filasExport();
+  if(!rows.length) return false;
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'CIERRE');
   XLSX.writeFile(wb, 'cierre_recepcion_' + new Date().toISOString().slice(0,10) + '.xlsx');
+  return true;
+}
+
+document.getElementById('btnExport').onclick = () => {
+  if(!descargarCierre()) mostrarAviso('No hay datos para exportar.');
 };
 
 /* ===== INICIO ===== */

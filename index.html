@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Sistema de Recepción Piloto - S.M.R.</title>
-  <link rel="icon" type="image/png" href="logo.png">
-<link rel="apple-touch-icon" href="logo.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -364,7 +362,45 @@ let CERRADAS = { verde: {}, juntoz: {}, drop: {} };
 let placaPendiente = null;
 let placaSel = { verde: null, juntoz: null };
 let DIA = new Date().toISOString().slice(0,10);
+ /* ===== RESPALDO LOCAL (por si se cae el internet o cierran Chrome) ===== */
+const LS = {
+  prog: 'smr_prog_' + DIA,
+  estado: 'smr_estado_' + DIA,
+  cerradas: 'smr_cerradas_' + DIA,
+  cierreAuto: 'smr_cierre_auto_' + DIA
+};
 
+function guardarLocal(){
+  try{
+    localStorage.setItem(LS.prog, JSON.stringify(DATA));
+    localStorage.setItem(LS.estado, JSON.stringify(ESTADO));
+    localStorage.setItem(LS.cerradas, JSON.stringify(CERRADAS));
+  }catch(e){ console.warn('No se pudo guardar local', e); }
+}
+
+function cargarLocal(){
+  try{
+    const p = localStorage.getItem(LS.prog);
+    const e = localStorage.getItem(LS.estado);
+    const c = localStorage.getItem(LS.cerradas);
+    if(p) DATA = JSON.parse(p);
+    if(e) ESTADO = JSON.parse(e);
+    if(c) CERRADAS = JSON.parse(c);
+    return !!(p || e);
+  }catch(e){ return false; }
+}
+
+/* Limpia días viejos para no llenar la memoria del RF */
+function limpiarDiasViejos(){
+  const hoy = DIA;
+  Object.keys(localStorage).forEach(k => {
+    if(k.startsWith('smr_') && k.includes('_') && !k.includes(hoy)){
+      const partes = k.split('_');
+      const fecha = partes[partes.length - 1];
+      if(/^\d{4}-\d{2}-\d{2}$/.test(fecha) && fecha < hoy) localStorage.removeItem(k);
+    }
+  });
+}
 const SENSIBLES = ['CELULAR','SMARTPHONE','TELEFONO','MOVIL','TABLET','IPAD','LAPTOP','NOTEBOOK',
   'PORTATIL','COMPUTADORA','IPHONE','SAMSUNG GALAXY','XIAOMI','REDMI','MOTOROLA','HONOR','HUAWEI',
   'BMobile','Nokia','Alcatel','ZTE','TCL','Infinix','Tecno','itel','Realme','Oppo','Vivo','OnePlus',
@@ -522,6 +558,7 @@ async function terminarCarga(res){
   DATA.verde = res.verde;
   DATA.juntoz = res.juntoz;
   DATA.drop = res.drop;
+guardarLocal();
   placaSel = { verde: null, juntoz: null };
   msg.className = 'msg good show';
   msg.textContent = `✔ Cargado: ${DATA.verde.length} en VERDE, ${DATA.juntoz.length} en JUNTOZ y ${DATA.drop.length} en DROP. Publicando…`;
@@ -552,12 +589,15 @@ async function cargarDesdeNube(){
     });
     document.getElementById('syncInfo').textContent = '☁️ Sincronizado ' + new Date().toLocaleTimeString('es-PE');
     renderTodo();
-  }catch(e){
-    document.getElementById('syncInfo').textContent = '⚠️ Sin conexión a la nube';
+guardarLocal();
+}catch(e){
+      }catch(e){
+    document.getElementById('syncInfo').textContent = '⚠️ Sin conexión — usando respaldo del equipo';
   }
 }
 
 async function guardarEnNube(tipo, placa, claveTxt, estado, motivo, observacion){
+  guardarLocal();
   try{
     await sb.from('recepcion').upsert({
       dia: DIA, hoja: tipo, placa: placa, clave: claveTxt,
@@ -566,7 +606,6 @@ async function guardarEnNube(tipo, placa, claveTxt, estado, motivo, observacion)
     }, {onConflict: 'dia,hoja,placa,clave'});
   }catch(e){ console.warn('No se pudo guardar en la nube', e); }
 }
-
 async function guardarProgramacionNube(){
   try{
     for(const tipo of ['verde','juntoz','drop']){
@@ -1444,24 +1483,67 @@ document.getElementById('btnExport').onclick = () => {
 pedirRol();
 aplicarRol();
 aplicarVista();
+limpiarDiasViejos();
+
+const habiaLocal = cargarLocal();
 renderTodo();
 
 (async () => {
   const msg = document.getElementById('loadMsg');
-  msg.className = 'msg show';
-  msg.textContent = 'Buscando la programación del día…';
+  if(habiaLocal){
+    msg.className = 'msg good show';
+    msg.textContent = '✔ Avance recuperado del equipo. Sincronizando con la nube…';
+  } else {
+    msg.className = 'msg show';
+    msg.textContent = 'Buscando la programación del día…';
+  }
   const hayProg = await cargarProgramacionNube();
-  if(!hayProg){
+  if(!hayProg && !habiaLocal){
     msg.className = 'msg show';
     msg.textContent = 'Todavía no hay programación publicada hoy. Cárgala desde la laptop (o arrastra los Excel aquí).';
   }
   cargarDesdeNube();
 })();
 
+/* Respaldo local cada 5 segundos, aunque no haya escaneo */
+setInterval(guardarLocal, 5000);
+
 setInterval(async () => {
   if(!DATA.verde.length && !DATA.juntoz.length && !DATA.drop.length) await cargarProgramacionNube();
   if(DATA.verde.length || DATA.juntoz.length || DATA.drop.length) cargarDesdeNube();
 }, 10000);
+
+/* ===== DESCARGA AUTOMÁTICA DEL CIERRE (1 vez al día, en el RF) ===== */
+function horaCierreAuto(){
+  // Cambia "18" por la hora a la que quieres el respaldo (18 = 6 pm)
+  return 18;
+}
+
+async function intentarCierreAuto(){
+  if(ROL !== 'rf') return;
+  if(!DATA.verde.length && !DATA.juntoz.length && !DATA.drop.length) return;
+  if(localStorage.getItem(LS.cierreAuto)) return;
+  const ahora = new Date();
+  if(ahora.getHours() < horaCierreAuto()) return;
+  const ok = descargarCierre();
+  if(ok){
+    localStorage.setItem(LS.cierreAuto, new Date().toISOString());
+    mostrarAviso('Se descargó el cierre del día automáticamente. Guárdalo o súbelo a facturación.');
+  }
+}
+
+setInterval(intentarCierreAuto, 60000);
+setTimeout(intentarCierreAuto, 8000);
+
+/* Aviso si cierran la página con avance sin descargar */
+window.addEventListener('beforeunload', e => {
+  guardarLocal();
+  const hayAvance = Object.values(ESTADO).some(g => Object.keys(g).length > 0);
+  if(hayAvance && !localStorage.getItem(LS.cierreAuto)){
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
 </script>
 </body>
 </html>
